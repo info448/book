@@ -299,30 +299,30 @@ However, as a slightly simpler demo, we'll set up a [`ShareActionProvider`](http
 
 We'll start by adding another item to our menu's XML. This will look like other items, except it will have an extra field `app:actionProviderClass` indicating that this item is an Action Provider (a widget that provides some actions)
 
-	```xml
-	<item
-	    android:id="@+id/menu_item_share"
-	    android:title="Share"
-	    app:showAsAction="ifRoom"
-	    app:actionProviderClass="android.support.v7.widget.ShareActionProvider"
-	    />
-	```
+```xml
+<item
+    android:id="@+id/menu_item_share"
+    android:title="Share"
+    app:showAsAction="ifRoom"
+    app:actionProviderClass="android.support.v7.widget.ShareActionProvider"
+    />
+```
 
 We'll then add the item to our menu in `onCreateOptionsMenu()`
 
-	```java
-	MenuItem item = menu.findItem(R.id.menu_item_share);
-	ShareActionProvider shareProvider = (ShareActionProvider)MenuItemCompat.getActionProvider(item);
+```java
+MenuItem item = menu.findItem(R.id.menu_item_share);
+ShareActionProvider shareProvider = (ShareActionProvider)MenuItemCompat.getActionProvider(item);
 
-	Intent intent = new Intent(Intent.ACTION_DIAL);
-	intent.setData(Uri.parse("tel:206-685-1622"));
+Intent intent = new Intent(Intent.ACTION_DIAL);
+intent.setData(Uri.parse("tel:206-685-1622"));
 
-	shareProvider.setShareIntent(intent);
-	```
+shareProvider.setShareIntent(intent);
+```
 
-	- We get access to the item using `findItem()` (similar to `findViewById()`), and then cast it to a `ShareActonProvider` (make sure you're using the support version!)
+- We get access to the item using `findItem()` (similar to `findViewById()`), and then cast it to a `ShareActonProvider` (make sure you're using the support version!)
 
-	- We can then specify an _Implicit Intent_ that we want that "Share Button" to be able to perform. This would commonly use the `ACTION_SEND` action (like for sharing a picture or text), but we'll use the `DIAL` action because we have a couple of dialers but don't actually have many `SEND` responders on the emulator.
+- We can then specify an _Implicit Intent_ that we want that "Share Button" to be able to perform. This would commonly use the `ACTION_SEND` action (like for sharing a picture or text), but we'll use the `DIAL` action because we have a couple of dialers but don't actually have many `SEND` responders on the emulator.
 
 The Menu item will then list a dropdown with all of the different Activities that `resolve` to handling that implicit intent! And we've now deeply combined Intents and Menus!
 

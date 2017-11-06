@@ -39,4 +39,4 @@ rmd_files:
   - java-swing.Rmd
   # - java-threads-http.Rmd
   # - kotlin.Rmd
-  # - publishing.Rmd
+  - publishing.Rmd
