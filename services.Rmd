@@ -1,9 +1,8 @@
-# Services
-<p class="alert alert-danger">This chapter is out of date and will be updated soon.</p>
+# Threads and Services {#services}
 
-This lecture discusses a component of Android development that is ___not___ immediately visible to users: [**Services**](https://developer.android.com/guide/components/services.html)^[https://developer.android.com/guide/components/services.html].
+<p class="alert alert-warning">This lecture is currently under revision.</p>
 
-**Services** are sort of like Activities that don't have a user interface or user interaction directly tied to them. Services can be launched by Activities or Applications, but then do their own thing in the background _even after the starting component is closed_ (this is distinct from `ASyncTask`, which had its lifecycle tied to that of its containing Activity). Once a Service is started, it keeps running until it is explicitly stopped (Services can be destroyed by the OS to save memory, similar to an Activity, but Services have higher ["priority"](https://developer.android.com/guide/topics/processes/process-lifecycle.html) and so aren't killed as readily).
+This lecture discusses a component of Android development that is ___not___ immediately visible to users: [**Services**](https://developer.android.com/guide/components/services.html)^[https://developer.android.com/guide/components/services.html]. _Services_ are sort of like Activities that don't have a user interface or user interaction directly tied to them. Services can be launched by Activities or Applications, but then do their own thing in the background _even after the starting component is closed_. Once a Service is started, it keeps running until it is explicitly stopped (Services can be destroyed by the OS to save memory, similar to an Activity, but Services have higher ["priority"](https://developer.android.com/guide/topics/processes/process-lifecycle.html) and so aren't killed as readily).
 
 Some common uses for a Service include:
 
@@ -11,22 +10,120 @@ Some common uses for a Service include:
 - Saving data to a database without crashing if the user leaves the app
 - Running some other kind of long-running, "background" task even after the app is closed, such as playing music!
 
-An important thing to note about Services: a Service is **not** a separate process; it runs in the same process as the app that starts it (unless otherwise specified). Similarly, a Service is **not** a Thread, and in fact doesn't need to run outside the UI thread! However, we quite often _do_ want to run the service outside of the UI Thread, and so often have it spawn and run a new `Runnable` Thread. When we say a Service runs "in the background", we mean from a user's perspective rather than necessarily on a background thread.
+The most common use of Services is to regularly perform a background task in a way that doesn't block the main UI interaction. This lecture thus begins with a discussion of threads and processes in Android, before detailing how to implement a Service.
 
-<p class="alert alert-info">This lecture references code found at <https://github.com/info448-s17/lecture13-services>.</p>
+<p class="alert alert-info">This lecture references code found at <https://github.com/info448/lecture13-services>.</p>
+
+
+## Threads and Processes
+*Concurrency** the process by which we have multiple _processes_ (think: methods) running at the same time. This can be contrasted with processes that run **serially**, or one after another.
+
+For example, if you call two methods one after the other, then the second method execute will "wait" for the first one to finished:
+
+```java
+public void countUp() {
+    for(int i=0; i<1000; i++){
+        System.out.println(i);
+    }
+}
+
+public void countDown() {
+    for(int i=0; i> -1000; i--){
+        System.out.println(i);
+    }
+}
+
+countUp(); //start counting up
+countDown(); //start counting down (once finished going up)
+```
+
+Computers as a general rule do exactly one thing a time: your central processing unit (CPU) just adds two number together over and over again, billions of times a second
+
+- The standard measure for _rate_ (how many times per second) is the `hertz` (Hz). So a 2 gigahertz (GHz) processor can do 2 billion operations per second.
+
+However, we don't realize that computers do only one thing at a time! This is because computers are really good at _multitasking_: they will do a tiny bit of one task, and then jump over to another task and do a little of that, and then jump over to another task and do a little of that, and then back to the first task, and so on.
+
+![Diagram of thread switching (source unknown)](img/threads/thread-switching.jpg)
+
+These "tasks" are divided up into two types: **processes** and **threads**. ___Read [this brief summary](https://docs.oracle.com/javase/tutorial/essential/concurrency/procthread.html) of the difference between them___.
+
+By breaking up a program into threads (which are "interwoven"), we can in effect cause the computer to do two tasks at once. This is _especially_ useful if one of the "tasks" might take a really long time&mdash;rather than **blocking** the application, we can let other tasks also make some progress while we're waiting for the long task to finish.
+
+### Java Threads {-}
+In Java, we create a Thread by creating a class that `implements` the [**`Runnable`**](https://docs.oracle.com/javase/8/docs/api/java/lang/Runnable.html) interface. This represents a class that can be "run" in a separate thread! The `run()` method required by the interface acts a bit like the "main" method for that Thread: when we start the Thread running, that is the method that will get called.
+
+If we just instantiate the `Runnable()` and call its `run()` method, that won't actually execute the method on a different thread (remember: an interface is just a "sign"; we could have called the interface and method whatever we wanted and it would still compile). Instead, we execute code on a separate thread by using an instance of the [**`Thread`**](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html) class. This class actually does the work of running code on a separate thread.
+
+`Thread` has a [constructor](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#Thread-java.lang.Runnable-) that takes in a `Runnable` instance as a parameter&mdash;you pass an object representing the "code to run" to the `Thread` object (this is an example of the _Strategy Pattern_). You then can actually **start** the `Thread` by calling its `.start()` method (_not_ the `run` method!).
+
+- Anonymous variables will be useful here; you don't need to assign a variable name to the `Runnable` objects or even the `Thread` objects if you just use them directly.
+
+For example, making the above `countUp()` and `countDown()` methods run on separate threads can cause the the output to be "interwoven", showing some positive then some negative numbers (you may need to increase the count or slow down the operation to see it in action, so one thread doesn't finish before the "switch").
+
+<!-- TODO: example detail -->
+
+### Android Threads {-}
+Android apps run by default on the ___Main Thread___ (also called the ___UI Thread___). This thread is in charge of all user interactions&mdash;handling button presses, scrolls, drags, etc.&mdash;but also UI _output_ like drawing and displaying text! See [Android Threads](https://developer.android.com/guide/components/processes-and-threads.html#Threads) for more details.
+
+- As mentioned above, a thread is a piece of a program that is independently scheduled by the processor. Computers do exactly one thing at a time, but make it look like they are doing lots of tasks simultaneously by switching between them (i.e., between processes) really fast. Threads are a way that we can break up a single application or process into little "sub-process" that can be run simultaneously&mdash;by switching back and forth periodically so everyone has a chance to work
+
+Within a single thread, all method calls are **synchronous**&mdash;that is, one has to finish before the next occurs. You can't get to step 4 without finishing step 3. With an event-driven system like Android, each method call is fast enough that this isn't a problem (you're done handling one click by the time the next occurs). But long, drawn-out processes like network access, processing bitmaps, or accessing a database could cause other tasks to have to wait. It's like a traffic jam!
+
+- Tasks such as network access are **blocking** method calls, which stop the Thread from continuing. A blocked _Main Thread_ will lead to the infamous **"Application not responding" (ANR)** error!
+
+Thus we need to move any "slow" code (such as network access) _off_ the Main Thread, onto a **background thread**, thereby allowing it to run without blocking the user interaction that occurs on the Main Thread. To do this in Android, we use a class called [`ASyncTask`](https://developer.android.com/reference/android/os/AsyncTask.html)^[https://developer.android.com/reference/android/os/AsyncTask.html] to perform a task (such as network access) asynchronously&mdash;without waiting for other Threads.
+
+<p class="alert alert-info">Learning Android Development involves knowing about what classes exist, and can be used to solve problems, but how were we able to learn about the existing of this highly useful (and specialized) `ASyncTask` class? We started from the official API Guide on [Processes and Threads Guide](https://developer.android.com/guide/components/processes-and-threads.html)^[https://developer.android.com/guide/components/processes-and-threads.html], which introduces this class! Thus to learn about new Android options, _read the docs_.</p>
+
+Note that an `ASyncTask` background thread will be _tied to the lifecycle of the Activity_: if we close the Activity, the network connection will die as well. A better option is often to use a `Service`, described below.
+
+`ASyncTask` can be fairly complicated, but is a good candidate to practice learning from the API documentation. Looking at that documentation, the first thing you should notice (or would if the API was a little more readable) is that `ASyncTask` is **`abstract`**, meaning you'll need to _subclass_ it in order to use it. Thus you can subclass it as an _inner_ class inside the Activity that will use it.
+
+<!-- TODO: example detail -->
+
+You should also notice that `ASyncTask` is a _generic_ class with three (3) generic parameters: the type of the Parameter to the task, the type of the Progress measurement reported by the task, and the type of the task's Result. We can fill in what types of Parameter and Result we want from our asynchronous method (e.g., take in a `String` and return a `String[]`). You can use the `Void` type for an unspecified type, such as with Progress measurement if you aren't tracking that.
+
+- We can actually pass in multiple `String` arguments using the `String... params` spread operator syntax (representing an arbitrary number of items of that type). See [here](https://docs.oracle.com/javase/tutorial/java/javaOO/arguments.html#varargs) for details. The value that the `ASyncTask` methods _actually_ get is an array of the arguments.
+
+When you "run" an AsyncTask, it will do four (4) things, represented by four methods:
+
+1. `onPreExecute()` is called _on the UI thread_ before it runs the task. This method can be used to perform any setup for the task.
+2. `doInBackground(Params...)` is called _on the background thread_ to do the work you want to be performed asynchronously. You **must** override this method (it's `abstract`!) The params and return type for the method need to match the `ASyncTask` generic types.
+3. `onProgressUpdate()` can be indirectly called _on the UI thread_ if we want to update our progress (e.g., update a progress bar). Note that UI changes can **only** be made on the UI thread!
+4. `onPostExecute(Result)` is called _on the UI thread_ to process any task results, which are passed as parameters to this method when `doInBackground` is finished.
+
+The `doInBackground()` is what occurs on the background thread (and is the heart of the task), so you would put e.g., network or database accessing method calls in there.
+
+We can then _instantiate_ a new `ASyncTask` object in the Activity's `onCreate()` callback, and call `ASyncTask#execute(params)` to start the task running on its own thread.
+
+In order to get any results back into the rendered View, you utilize the `doPostExecute()` method. This method is run on the _UI Thread_ so you can use it to update the View (we can _only_ change the View on the UI Thread, to avoid collisions). It also gets the results _returned_ by `doInBackground()` passed to it automatically!
+
+- E.g., you can take a resulting `String[]` and put that into an `Adapter` for a `ListView`.
+
+`ASyncTask` is the simplest, general way to do some work on a background thread. However, it has a few limitations:
+
+- The lifecycle of an `ASyncTask` is tied to that of its containing Activity. This means that if the containing Activity is destroyed (e.g., is `finished()`), then the the ASyncTask is as well&mdash;you would lose any data you were downloading or might corrupt your database in some way.
+
+- To handle lots of different background tasks, you would need to do your own task management.
+
+As such, repeated or longer-lasting tasks (such as large file downloads) are often better handled through **Services**.
 
 
 ## IntentServices
+As mentioned above, a Service is an application component (like an Activity) that runs in the "background", even if the user switches to another application. Services do not normally have an associated user interface, but instead are simply was to group and manage large amounts of data processing (e.g., for network downloads, media processing, or database access).
+
+- An important thing to note about Services: a Service is **not** a separate process; it runs in the same process as the app that starts it (unless otherwise specified). Similarly, a Service is **not** a Thread, and in fact doesn't need to run outside the UI thread! However, we quite often _do_ want to run the service outside of the UI Thread, and so often have it spawn and run a new `Runnable` Thread. When we say a Service runs "in the background", we mean from a user's perspective rather than necessarily on a background thread.
+
 To create a Service, we're going to subclass [`Service`](https://developer.android.com/reference/android/app/Service.html) and override some _lifecycle callbacks_, just like we've done with `Activity`, `Fragment`, `BroadcastReceiver`, and most other Android components. In this sense, Services are in fact implemented like Activities that run without a user interface ("in the background").
 
-Because Services will be performing extra background computation, it's important to also create a separate background thread so that we don't block the Main Thread. Since making a Service that does some (specific) task in a background thread is so common, Android includes a `Service` subclass we can use to do exactly this work. This class is called [`IntentService`](https://developer.android.com/reference/android/app/IntentService.html)&mdash;a service that responds to `Intents` and does some work in response to them.
+Because Services will be performing extra background computation, it's important to also create a separate background thread so that you don't block the Main Thread. Since making a Service that does some (specific) task in a background thread is so common, Android includes a `Service` subclass we can use to do exactly this work. This class is called [`IntentService`](https://developer.android.com/reference/android/app/IntentService.html)&mdash;a service that responds to `Intents` and does some work in response to them.
 
-- An IntentService does similar work to `ASyncTask`, but with the advantage that it will keep doing that work even if the Activity is destroyed!
-- `IntentService` will listen to any incoming "requests" (`Intents`) and "queue" them up, handling each one at a time. Once the service is out of tasks to do, the service will shut itself down to save memory (though it will restart if more `Intents` are sent to it). Basically, it handles a lot of the setup and cleanup involved in Service on its own!
+- An IntentService does a similar job to `ASyncTask`, but with the advantage that it will keep doing that work even if the Activity is destroyed!
+- `IntentService` will listen to any incoming "requests" (`Intents`) and "queue" them up, handling each one at a time. Once the service is out of tasks to do, the service will shut itself down to save memory (though it will restart if more `Intents` are sent to it). Basically, it handles a lot of the setup and cleanup involved in using a Service on its own!
 
 - (This lecture will start with `IntentService` because it's simpler, and then move into the more generic, complex version of Services).
 
-We create an IntentService by defining a new class (e.g., `CountingService`) that subclasses `Intent Service`.
+We create an IntentService by defining a new class (e.g., `CountingService`) that subclasses `IntentService`.
 
 - Implement a default _constructor_ that can call `super(String nameForDebugging)`. This allows the class to be instantiated (by the Android framework; again, like an Activity).
 - Also implement the `onHandleIntent(Intent)` method. Incoming `Intents` will wait their turn in line, and then each is delivered to this method in turn. Note that all this work (delivery and execution) will happen in a **background thread** supplied by `IntentService`.
@@ -50,11 +147,15 @@ Just like with Activities, we also need to declare the `<service>` in the Manife
 <service android:name=".CountingService" />
 ```
 
-Finally, we can send an `Intent` to the Service by using the `startService()` method. This is similar to `startActivity()`, but is for services! We can use explicit intents just like with Activities, and could even include Extras if we wanted to label and track the specific Intents sent to the service.
+Finally, we can send an `Intent` to the Service by using the `startService()` method. This is similar to `startActivity()`, but for Services! We can use explicit intents just like with Activities, and could even include Extras if we wanted to label and track the specific Intents sent to the Service.
 
 - When the Service starts, we can see it start counting (but without blocking the UI Thread). We can also destroy the Activity and see that the Service keeps running.
 
-If we want to have the Service to interact with the user interface, such as displaying a Toast, we will need to make sure that occurs on the UI Thread (you cannot change the UI on a separate thread). This requires _inter-thread communication_: we need to get a message (a function call) from the background thread to the UI Thread. We can perform this communication using a [`Handler`](https://developer.android.com/reference/android/os/Handler.html), which is an object used to pass messages between Threads&mdash;it "handles" the messages!
+If we want to have the Service interact with the user interface (e.g., display a Toast), we will need to make sure that occurs on the UI Thread (you cannot change the UI on a separate thread). This requires _inter-thread communication_: we need to get a message (a function call) from the background thread to the UI Thread.
+
+- This is what various `ASyncTask` UI thread methods (such as `onProgressUpdate()`) do for us.
+
+We can perform this communication using a [`Handler`](https://developer.android.com/reference/android/os/Handler.html), which is an object used to pass messages between Threads&mdash;it "handles" the messages!
 
 - We instantiate a `new Handler()` object (e.g., in the Service's `onCreate()` callback), calling a method on that object when we want to "send" a message. The easiest way to send a message is to use the `post()` function, which takes a `Runnable()` method which will be executed _on the Main Thread_:
 
@@ -67,7 +168,7 @@ If we want to have the Service to interact with the user interface, such as disp
     });
     ```
 
-### The Service Lifecycle
+### The Service Lifecycle {-}
 Having demonstrated the basic usage of a service, consider what is going on "under the hood"&mdash;starting with the [Service lifecycle](https://developer.android.com/guide/components/services.html#LifecycleCallbacks). There are actually two different "types" of Services, with different variations of the lifecycle. **Started Services** (or "unbound" Services) are those that are initiated via the `startService()` function, as in the above example. The other option, **Bound Services**, are Services that have "client" Activities bound to them to interact with; see below for details.
 
 ![Service lifecycle diagram, from Google^[https://developer.android.com/images/service_lifecycle.png]](img/services/service_lifecycle.png)
@@ -78,7 +179,7 @@ Having demonstrated the basic usage of a service, consider what is going on "und
 
 - The most important callback for a _Started Service_ is called `onStartCommand()`. This method is called when the Service is **sent a command** by another component (via an Intent). Importantly, `onStartCommand()` is not only called when the Service is started for the first time, but whenever the Service receives an Intent to start (even if the Service was already running)! These Intents are those sent via `startService()`.
 
-    - Note that when working with an _IntentService_ specifically, `onStartCommand()` will "queue" any incoming Intents. When it is the specific Intent's turn to be "run", that Intent is automatically passed to the `onHandleIntent()` method, which executes on a _background thread_ (similar to `AsyncTask#doInBackground()`). This callback is not part of the normal Service lifecycle, but is a special helper method used by IntentService&mdash;similar to how `onCreateDialog()` is a special method used by `DialogFragments`.
+    - Note that when working with an _`IntentService`_ specifically, `onStartCommand()` will "queue" any incoming Intents. When it is the specific Intent's turn to be "run", that Intent is automatically passed to the `onHandleIntent()` method, which executes on a _background thread_ (similar to `AsyncTask#doInBackground()`). This callback is not part of the normal Service lifecycle, but is a special helper method used by IntentService&mdash;similar to how `onCreateDialog()` is a special method used by `DialogFragments`.
 
 - The `onBind()` and `onUnbind()` callbacks are used for bound services, and are discussed below.
 
@@ -87,7 +188,7 @@ Having demonstrated the basic usage of a service, consider what is going on "und
 - Finally, Services have an `onDestroy()` callback, which is again equivalent to the Activity callback.
 
     - In general, Services have to be manually told to **stop**. We stop a Service by using `stopService(Intent)` to send that Service a "stop" Intent. The Service can also stop itself by calling `stopSelf()`.
-    - _Important_: When told to stop, an IntentService will finish up handling any Intents that are currently "running", but any other Intents that are "queued" will be removed. Once there are no more queued Intents, an IntentService will call `stopSelf()`, thereby causing the `onDestroy()` callback to be executed.
+    - _Important_: When told to stop, an `IntentService` will finish up handling any Intents that are currently "running", but any other Intents that are "queued" will be removed. Once there are no more queued Intents, an IntentService will call `stopSelf()`, thereby causing the `onDestroy()` callback to be executed.
 
 
 ___Practice:___ fill in the callback functions with Log or Toast messages to see how and when they are executed. For example:
@@ -95,20 +196,21 @@ ___Practice:___ fill in the callback functions with Log or Toast messages to see
 ```java
 public int onStartCommand(Intent intent, int flags, int startId) {
   Toast.makeText(this, "Intent received", Toast.LENGTH_SHORT).show();
-  return super.onStartCommand(intent,flags,startId);
+  return super.onStartCommand(intent, flags, startId);
 }
 ```
 
-As a last point to note about the Service lifecycle consider the `int` that is returned by `onStartCommand()`. This `int` is a flag that indicates how the Service should behave^[https://developer.android.com/guide/components/services.html#ExtendingService] when it is "restarted" after having been destroyed:
+As a last point to note about the Service lifecycle consider the `int` that is returned by `onStartCommand()`. This `int` is a flag that indicates how the Service should [behave](https://developer.android.com/guide/components/services.html#ExtendingService)^[https://developer.android.com/guide/components/services.html#ExtendingService] when it is "restarted" after having been destroyed:
 
 - [`START_NOT_STICKY`](https://developer.android.com/reference/android/app/Service.html#START_NOT_STICKY) indicates that if the Service is destroyed by the system, it should not be recreated. This is the "safest option" to avoid extraneous service executions; instead, just have the application restart the Service.
 
-- [`START_STICKY`](https://developer.android.com/reference/android/app/Service.html#START_STICKY) indicates that if the Service is destroyed by the system, it should be recreated when possible. At that point, `onStartCommand()` will be called with delivered a `null` Intent (unless there were other start Intents waiting to be delivered, in which case those are used). This option works well for media players or similar services that are running indefinitely (rather than executing specific commands).
+- [`START_STICKY`](https://developer.android.com/reference/android/app/Service.html#START_STICKY) indicates that if the Service is destroyed by the system, it should be recreated when possible. At that point, `onStartCommand()` will be called by delivering a `null` Intent (unless there were other start Intents waiting to be delivered, in which case those are used). This option works well for media players or similar services that are running indefinitely (rather than executing specific commands).
 
 - [`START_REDELIVER_INTENT`](https://developer.android.com/reference/android/app/Service.html#START_REDELIVER_INTENT) indicates that if the Service is destroyed by the system, it should be recreated when possible. At that point, `onStartCommand()` will be called with the _last_ Intent that was delivered to the Service (and any other Intents are delivered in turn). This option is good for Services that actively perform jobs that need to be resumed, such as downloading a file.
 
 In other words: services may get killed, but we can specify how they get resurrected! And of course, we can and should return different values for different starting commands (Intents): so the Intent to download a music file might return `START_REDELIVER_INTENT`, but the Intent to play the music file might return `START_STICKY`.
 
+<!-- TODO continue editing -->
 
 ## Example: A Music Service
 One of the classic uses for a background service is to play music, so we will use that as an example. It is possible to play music directly from an Activity, and the music will even keep playing as long as the Activity is alive. But remember that Activities are fragile, and can be destroyed at any moment (whether by us or by the system to save resources). So in order to keep our music playing even as we go about other tasks, we should [use a Service](http://developer.android.com/guide/topics/media/mediaplayer.html#mpandservices). Services have higher "priority" in the eyes of the Android system, and so don't get sacrificed for resources as readily as normal Activities.
