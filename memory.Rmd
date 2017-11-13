@@ -1,12 +1,11 @@
 # Memory Management {#memory}
-<p class="alert alert-danger">This chapter is out of date and will be updated soon.</p>
-
 Android is designed to run on _resource constrained_ devices, and one of the most constrained resources is the device's [**memory**](https://en.wikipedia.org/wiki/Computer_memory). Because of this, a large part of the Android framework and how we interact with application components deals with how the system [manages memory](https://developer.android.com/topic/performance/memory.html), making sure sufficient memory is available for whatever the user wants to do.
 
 In this short tutorial, you will explore how the Android operating system handles memory, and learn how to use the [Android Monitor](https://developer.android.com/studio/profile/android-monitor.html)'s [Memory Monitor](https://developer.android.com/studio/profile/am-memory.html) to view your application's memory usage and identify potential [memory leaks](https://en.wikipedia.org/wiki/Memory_leak).
 
-<p class="alert alert-info">The code for this tutorial can be found at <https://github.com/info448-s17/lab-memory>. Note that you will not be required to write much code for this lab; it is more about using the tools and inspecting the logged output to get a sense for how memory is handled in Android. You should be able to complete this tutorial on _either_ the emulator or a physical device.</p>
+<p class="alert alert-info">The code for this tutorial can be found at <https://github.com/info448/lab-memory>. Note that you will not be required to write much code for this lab; it is more about using the tools and inspecting the logged output to get a sense for how memory is handled in Android. You should be able to complete this tutorial on _either_ the emulator or a physical device.</p>
 
+<p class="alert alert-warning">This tutorial is based on Android Studio version 2.3.3. Android Studio 3.0 introduces a [different set of profiling tools](https://developer.android.com/studio/preview/features/android-profiler.html), though they should work in a similar way.</p>
 
 ## Memory Allocation
 First, a short introduction to how memory is handled by a computer (including mobile computers):
@@ -51,7 +50,7 @@ While watching the monitor, click on the **"BLANK ACTIVITY"** button to be taken
 
 Navigate back to the `MainActivity`. You might see the memory allocation increase a little more, as restarting the Activity can cause the Views to need to be recreated.
 
-### Garbage Collection
+### Garbage Collection {-}
 Let's see how the Java (technically, Dalvik) virtual machine handles memory. From the `MainActivity`, click on the button to go to the `ProgressActivity`. This Activity will show the progress towards completing a number of undefined tasks (it's just showing a bunch of `ProgressBar` Views, which use a bit more memory than standard buttons).
 
 - When you visited this `Activity`, you should have seen the memory allocation jump up!
@@ -99,6 +98,6 @@ Now you should have a sense for how values in Android can influence memory usage
 
 Finally, if you use the memory monitor and see memory usage stacking up, that is not necessarily a memory leak or other problem: it could just be that the system hasn't run garbage collection yet! A memory leak is when resources that _should_ be able to be reclaimed cannot be&mdash;but as long as you keep variables local and de-reference large objects, you'll be fine!
 
-<p class="alert alert-info">Android Studio includes numerous other monitors for profiling the performance of your application. See [Android Monitor](https://developer.android.com/studio/profile/android-monitor.html) and [Performance and Power](https://developer.android.com/topic/performance/index.html) for more details.</p>
+<p class="alert alert-info">Android Studio includes numerous other monitors for profiling the performance of your application. See [Android Monitor](https://developer.android.com/studio/profile/android-monitor.html) and [Performance and Power](https://developer.android.com/topic/performance/index.html) for more details. Additionally, [Android Studio 3](https://developer.android.com/studio/preview/features/android-profiler.html) contains a new set of profiling tools (but the basic concepts work the same way).</p>
 
 <p class="alert alert-warning">Avoid pre-mature optimization! Make sure that you can get your app _working_ first, and then utilize these tools to solve specific problems, such as slow performance.</p>

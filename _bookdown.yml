@@ -30,8 +30,8 @@ rmd_files:
   - viewpager.Rmd
   - bluetooth.Rmd
   - maps.Rmd
+  - memory.Rmd
   # - accessibility.Rmd
-  # - memory.Rmd
   # - multitouch.Rmd
   #
   - appendix.Rmd
