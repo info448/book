@@ -16,7 +16,7 @@ The most common use of Services is to regularly perform a background task in a w
 
 
 ## Threads and Processes
-*Concurrency** the process by which we have multiple _processes_ (think: methods) running at the same time. This can be contrasted with processes that run **serially**, or one after another.
+**Concurrency** is the process by which we have multiple _processes_ (think: methods) running at the same time. This can be contrasted with processes that run **serially**, or one after another.
 
 For example, if you call two methods one after the other, then the second method execute will "wait" for the first one to finished:
 
@@ -134,7 +134,7 @@ We create an IntentService by defining a new class (e.g., `CountingService`) tha
     for(int count=0; count<=10; count++){
         Log.v(TAG, "Count: "+count);
         try {
-            Thread.sleep(5000); //sleep for 5 seconds
+            Thread.sleep(2000); //sleep for 2 seconds
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -215,10 +215,10 @@ In other words: services may get killed, but we can specify how they get resurre
 ## Example: A Music Service
 One of the classic uses for a background service is to play music, so we will use that as an example. It is possible to play music directly from an Activity, and the music will even keep playing as long as the Activity is alive. But remember that Activities are fragile, and can be destroyed at any moment (whether by us or by the system to save resources). So in order to keep our music playing even as we go about other tasks, we should [use a Service](http://developer.android.com/guide/topics/media/mediaplayer.html#mpandservices). Services have higher "priority" in the eyes of the Android system, and so don't get sacrificed for resources as readily as normal Activities.
 
-### MediaPlayer
+### MediaPlayer {-}
 In order to make a music service, we need to briefly explain how to play music with [`MediaPlayer`](https://developer.android.com/guide/topics/media/mediaplayer.html). This is the main API for playing sound and video (e.g., if you want to play `.mp3` files).
 
-<p class="alert alert-info">Android actually has a toal of three (3) audio APIs! The [`SoundPool`](https://developer.android.com/reference/android/media/SoundPool.html) API is great for short sound effects that play simultaneously (though you need to do extra work to load those clips ahead of time), as with simple games. The  [`AudioTrack`](http://developer.android.com/reference/android/media/AudioTrack.html) API allows you to play audio at a very low level (e.g., by "pushing" bytes to a stream). This is useful for generated Audio (like MIDI music) or if you're trying to do some other kind of low-level stuff.</p>
+<p class="alert alert-info">Android actually has a total of three (3) audio APIs! The [`SoundPool`](https://developer.android.com/reference/android/media/SoundPool.html) API is great for short sound effects that play simultaneously (though you need to do extra work to load those clips ahead of time), such as for simple games. The  [`AudioTrack`](http://developer.android.com/reference/android/media/AudioTrack.html) API allows you to play audio at a very low level (e.g., by "pushing" bytes to a stream). This is useful for generated Audio (like MIDI music) or if you're trying to do some other kind of low-level stuff.</p>
 
 `MediaPlayer` is very simple to use, particularly when playing a locally defined resource (e.g., something in `res/raw/`). You simply use a factory to make a new `MediaPlayer` object, and then call `.play()` on it:
 
@@ -236,7 +236,7 @@ mediaPlayer.release();
 mediaPlayer = null;
 ```
 
-We can also implement and register a `MediaPlayer.OnCompletionListener` to handle when a song finishes playing.
+We can also implement and register a `MediaPlayer.OnCompletionListener` to do something when a song finishes playing.
 
 Finally, it is possible to use `MediaPlayer` to play files from a `ContentProvider` or even off the Internet!
 
@@ -251,7 +251,7 @@ mediaPlayer.setOnPreparedListener(this); //handle when file is buffered
 mediaPlayer.start();
 ```
 
-### Creating a Service
+### Creating a Service {-}
 In order to make our music service, we are going to subclass the `Service` class itself (_don't forget to include the Service in the `Manifest`_) and manually set up all the pieces. Specifically, we will fill in the lifecycle callbacks:
 
 - `onCreate()` we can include, though it doesn't need to do anything.
@@ -303,7 +303,7 @@ _Importantly_, once we are done doing foreground work (e.g., playing music), we 
 
 
 ## Bound Services
-As mentioned above, there are two "types" of Services: **Started Services** (Services launched with `startService()`) and **Bound Services**. A [Bound Service](https://developer.android.com/guide/components/bound-services.html) is a Service that acts as the "server" in a client-server setup: it allows for client Activities to "connect" to it (___bind it___) and then exchange messages with&mdash;primarily by calling methods on the Service. These messages can even be _across processes_, allowing for [interprocess communication](https://en.wikipedia.org/wiki/Inter-process_communication)! This is useful when you want interact with the Service from an Activity in some way (e.g., if we want to `pause()` our music), or if we want to make the service's capabilities available to other applications.
+As mentioned above, there are two "types" of Services: **Started Services** (Services launched with `startService()`) and **Bound Services**. A [Bound Service](https://developer.android.com/guide/components/bound-services.html) is a Service that acts as the "server" in a client-server setup: it allows for client Activities to "connect" to it (___bind it___) and then exchange messages with it&mdash;primarily by calling methods on the Service. These messages can even be _across processes_, allowing for [interprocess communication](https://en.wikipedia.org/wiki/Inter-process_communication)! This is useful when you want interact with the Service from an Activity in some way (e.g., if we want to `pause()` our music), or if we want to make the service's capabilities available to other applications.
 
 We make a Bound Service by having the Service implement and utilize the **`onBind()`** callback. This method returns an `IBinder` object (the `I` indicates that it's an _Interface_, following a Java convention common in enterprise software). When Activities connect to this Service (using the `bindService()` method), this `IBinder` object is passed to them, and they can use it to get access to the Service process to call methods on it. Effectively, the binding process produces an _object_ that represents that Service, so Activities can call methods on the Service without needing to send it Intents!
 
@@ -312,22 +312,22 @@ As an example, let's add the ability to "pause" the music being played as a boun
 The first thing we need to do is have our Service implement the `onBind()` method. To do this, we will need an `IBinder` object to return (that is: an object of a class that implements the `IBinder` interface). For "local services" (e.g., Services that are run _in the same process_), the easiest way to get an `IBinder` is to extend the `Binder` class:
 
 ```java
-private final IBinder mBinder = new LocalBinder(); //singleton instance variable
-
-public class LocalBinder extends Binder { //implements IBinder
+public class MyBinder extends Binder { //implements IBinder
     //binder class methods will go here!
 }
+
+private final IBinder mBinder = new MyBinder(); //singleton instance variable
 ```
 
 - Our local version starts "empty" for now; we'll add details below.
 - We will just return this object from `onBind()`.
 
-Because the Activity is given a copy of this `LocalBinder` object, that class can be designed to support the Activity communicating with the Service in a couple of different ways:
+Because the Activity is given a copy of this `MyBinder` object, that class can be designed to support the Activity communicating with the Service in a couple of different ways:
 
-1. The `IBinder` can provide `public` methods for the Activity to call. These methods can then access instance variables of the Service (since the `LocalBinder` is a nested class). This causes the `IBinder` to literally act as the "public interface" for the Service!
+1. The `IBinder` can provide `public` methods for the Activity to call. These methods can then access instance variables of the Service (since the `MyBinder` is a nested class). This causes the `IBinder` to literally act as the "public interface" for the Service!
 
     ```java
-    //in LocalBinder
+    //in MyBinder
     public String getSongName() {
         return songName; //access Service instance variable
     }
@@ -336,7 +336,7 @@ Because the Activity is given a copy of this `LocalBinder` object, that class ca
 2. The `IBinder` can provide access to the Service itself (via a getter that returns the `Service` object). The Activity can then call any public methods provided by that `Service` class.
 
     ```java
-    //in LocalBinder
+    //in MyBinder
     public MusicService getService() {
         // Return this instance of this Service so clients can call public methods on it!
         return MusicService.this;
@@ -348,14 +348,14 @@ Because the Activity is given a copy of this `LocalBinder` object, that class ca
 In the Activity, we need to do a bit more work in order to interact with the bound Service. We bind to a Service using <a href="http://developer.android.com/reference/android/content/Context.html#bindService(android.content.Intent, android.content.ServiceConnection, int)">`bindService(Intent, ServiceConnection, flag)`</a>. We can do this whenever we want the Service to be available (`onStart()` is a good option, so it is available when the Activity is active).
 
 - The Intent parameter should be addressed to the Service we want to bind.
-- The `ServiceConnection` parameter is a reference to an object that implements the `ServiceConnection` interface, providing callbacks that can be executed whe the Activity connects to the Service. We can have the Activity implement the interface, or create a separate anonymous class:
+- The `ServiceConnection` parameter is a reference to an object that implements the `ServiceConnection` interface, providing callbacks that can be executed when the Activity connects to the Service. We can have the Activity implement the interface, or create a separate anonymous class:
 
     ```java
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
             // We've bound to LocalService, cast the IBinder and get LocalService instance
-            LocalBinder binder = (LocalBinder) service;
+            MyBinder binder = (MyBinder) service;
             mService = binder.getService();
             mBound = true;
         }
@@ -382,6 +382,6 @@ protected void onStop() {
 }
 ```
 
-<p class="alert alert-info">Keep in mind that binding a Service **DOES NOT** call `onStartCommand()`, but simply creates the Service and gives us access to it! Bound Services are not by defaul considered "started", and are generally kept around by the OS as long as they are bound. If we do "start" a Bound Service (e.g., with `startService()`), we will need to remember to stop it later!</p>
+<p class="alert alert-info">Keep in mind that binding a Service **DOES NOT** call `onStartCommand()`, but simply creates the Service and gives us access to it! Bound Services are not by default considered "started", and are generally kept around by the OS as long as they are bound. If we do "start" a Bound Service (e.g., with `startService()`), we will need to remember to stop it later!</p>
 
 This example is just for _local services_ (that are accessed within the same process&mdash;within the same Application). If we want the Service to be available to other processes (i.e., other Applications), we need to do more work. Specifically, we use `Handler` and `Messenger` objects to pass messages between these processes (similar to the example we did for passing messages between threads); for more details, see [the example in the guide](https://developer.android.com/guide/components/bound-services.html#Messenger), as well as the complete sample classes [`MessengerService`](https://github.com/android/platform_development/blob/master/samples/ApiDemos/src/com/example/android/apis/app/MessengerService.java) and [`MessengerServiceActivities`](https://github.com/android/platform_development/blob/master/samples/ApiDemos/src/com/example/android/apis/app/MessengerServiceActivities.java).
