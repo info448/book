@@ -21,7 +21,7 @@ rmd_files:
   - databases-providers.Rmd
   - location.Rmd
   - services.Rmd
-  # - sensors.Rmd
+  - sensors.Rmd
   # - animation.Rmd
 
   - part-labs.Rmd
