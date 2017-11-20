@@ -22,7 +22,7 @@ rmd_files:
   - location.Rmd
   - services.Rmd
   - sensors.Rmd
-  # - animation.Rmd
+  - animation.Rmd
 
   - part-labs.Rmd
   # #- debugger.Rmd

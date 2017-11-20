@@ -4,7 +4,7 @@ In this short chapter, you will practice working with touch interaction by imple
 
 Specifically, you will be implementing an simple animated app that graphically tracks the location of all 5 of your fingers.
 
-<p class="alert alert-info">The code for this tutorial can be found at <https://github.com/info448/lab-multitouch>. Note that the starter code builds on the example presented in [Lecture 15](#animation).</p>
+<p class="alert alert-info">The code for this tutorial can be found at <https://github.com/info448/lab-multitouch>. Note that the starter code builds on the example presented in [Lecture 15](#graphics).</p>
 
 <p class="alert alert-warning">The emulator doesn't support multi-touch, so you will need to run this project on a physical device.</p>
 
