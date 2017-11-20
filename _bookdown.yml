@@ -31,8 +31,8 @@ rmd_files:
   - bluetooth.Rmd
   - maps.Rmd
   - memory.Rmd
+  - multitouch.Rmd
   # - accessibility.Rmd
-  # - multitouch.Rmd
   #
   - appendix.Rmd
   - java-review.Rmd
