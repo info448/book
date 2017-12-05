@@ -23,6 +23,7 @@ rmd_files:
   - services.Rmd
   - sensors.Rmd
   - animation.Rmd
+  # - firebase.Rmd
 
   - part-labs.Rmd
   # #- debugger.Rmd

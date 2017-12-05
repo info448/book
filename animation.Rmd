@@ -156,7 +156,7 @@ This lets us react to basic touching. For example, we can make it so that taps (
 
 ### Advanced Gestures {-}
 `r #could skip for time, but I kind of like it`
-We can also  detect and react to more complex gestures: long presses, double-taps, or "flings" (a flick or swipe on the screen). As these gestures, the Material Design specification details some [specific patterns](https://www.google.com/design/spec/patterns/gestures.html#gestures-drag-swipe-or-fling-details) that you should consider when utilizing these interactions
+We can also  detect and react to more complex gestures: long presses, double-taps, or "flings" (a flick or swipe on the screen). As with basic gestures, the Material Design specification details some [specific patterns](https://www.google.com/design/spec/patterns/gestures.html#gestures-drag-swipe-or-fling-details) that you should consider when utilizing these interactions.
 
 Android provides a [`GestureDetector`](https://developer.android.com/training/gestures/detector.html#detect) class that can be used to identify these actions. The easiest way to use this class&mdash;particularly when we're interested in a particular gesture (like fling)&mdash;is to _extend_ `GestureDetector.SimpleOnGestureListener` to make our own "listener" for gestures. We can then override the callbacks for the gestures we're interested in responding to: e.g., `onFling()`.
 
