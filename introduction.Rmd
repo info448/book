@@ -60,6 +60,7 @@ Android has gone through a large number of "versions" since it's release:
 | Oct 2015 | 6.0 | Marshmallow | 23 |
 | Aug 2016 | 7.0 | Nougat | 24 |
 | Aug 2017 | 8.0 | Oreo | 26 |
+| Aug 2018 | 9.0 | Pie | 28 |
 
 Each different "version" is nicknamed after a dessert, in alphabetical order. But as developers, what we care about is the **API Level**, which indicates what different programming _interfaces_ (classes and methods) are available to use.
 
@@ -78,7 +79,7 @@ Instead, users get updated phones historically by purchasing new devices (every 
 ### Legal Battles {-}
 When discussing Android history, we would be remiss if we didn't mention some of the legal battles surrounding Android. The biggest of these is [**Oracle v Google**](https://www.eff.org/cases/oracle-v-google). In a nutshell, Oracle claims that the _Java API_ is copyrighted (that the method signatures themselves and how they work are protected), so because Google uses that API in Android, Google is violating the copyright. In 2012 a California federal judge decided in Google favor (that one can't copyright an API). This was then reversed by the Federal Circuit court in 2014. The verdict was appealed to the US Supreme Court in 2015, who refused to hear the case. It then went back to the the district court, which ruled in 2016 that Google's use of the API was fair use. This ruling is again under appeal. See <https://www.eff.org/cases/oracle-v-google> for a summary, as well as <https://arstechnica.com/series/series-oracle-v-google/>
 
-- One interesting side effect of this battle: the Android Nougat and later uses the [OpenJDK](https://openjdk.java.net/) implementation of Java, instead of Google's own in-violation-but-fair-use implementation [see here](https://venturebeat.com/2015/12/29/google-confirms-next-android-version-wont-use-oracles-proprietary-java-apis/). This change _shouldn't_ have any impact on you as a developer, but it's worth keeping an eye out for potentially differences between Android and Java SE.
+- One interesting side effect of this battle: the Android Nougat and later uses the [OpenJDK](https://openjdk.java.net/) implementation of Java, instead of Google's own in-violation-but-fair-use implementation [see here](https://venturebeat.com/2015/12/29/google-confirms-next-android-version-wont-use-oracles-proprietary-java-apis/). This change _shouldn't_ have any impact on you as a developer, but it's worth keeping an eye out for potentially differences between Android and Java SE. This may also be a motivator for Android to make Kotlin its primary language.
 
 There have been other legal challenges as well. While not directly about Android, the other major relevant court battle is  [**Apple v Samsung**](https://arstechnica.com/series/apple-v-samsung/). In this case, Apple claims that Samsung infringed on their intellectual property (their design patents). This has gone back and forth in terms of damages and what is considered infringing; as of this writing, the latest development is that the Supreme Court heard the case and [sided with Samsung](https://www.nytimes.com/2016/12/06/technology/samsung-apple-smartphone-patent-supreme-court.html?_r=0) that infringing design patents shouldn't lead to damages in terms of the entire device... it's complicated (the author is not a lawyer).
 
@@ -88,13 +89,13 @@ So overall: Android is a growing, evolving platform that is embedded in and affe
 ## Building Apps
 While Android applications can be developed using any programming environment, the official and best IDE for Android programming is [**Android Studio**](https://developer.android.com/studio/index.html). This is a fork of JetBrain's IntelliJ IDEA application&mdash;a Java IDE customized for Android development. You will need to download and install this IDE.
 
-- Be sure to download the Android Studio bundle that includes the **Android SDK** (Standard Development Kit): the tools and libraries needed for Android development. In particular, the SDK comes with a number of useful [command-line tools](https://developer.android.com/studio/command-line/index.html). These include:
+- Be sure to download the Android Studio bundle that includes the **Android SDK** (Standard Development Kit): the tools and libraries needed for Android development. In particular, the SDK comes with a number of useful [command line tools](https://developer.android.com/studio/command-line/index.html). These include:
 
 	- **`adb`**, the "**Android Device Bridge**", which is a connection between your computer and the device (physical _or_ virtual). This tool is used for console output!
 	- **`emulator`**, which runs the Android emulator: a virtual machine of an Android device.
 	<!-- - <s>`android`</s> (_deprecated/removed_): a tool that does SDK/AVD (Android Virtual Device) management. Basically, this command-line utility did everything that the IDE did, but from the command-line! It has recently been removed from the IDE. -->
 
-	I recommend making sure that you have the SDK tools (the `tools` and `platform-tools` folder) available on your computer's `PATH` so you can use them from the command-line. By default, the SDK is found at `/Users/$USER/Library/Android/sdk` on a Mac, and at `C:\Users\$USERNAME\AppData\Local\Android\sdk` on Windows. While these tools are all built into the IDE, they can be useful fallbacks for debugging or automation.
+	I recommend making sure that you have the SDK tools (the `tools` and `platform-tools` folder) available on your computer's `PATH` so you can use them from the command line. By default, the SDK is found at `/Users/$USER/Library/Android/sdk` on a Mac, and at `C:\Users\$USERNAME\AppData\Local\Android\sdk` on Windows. While these tools are all built into the IDE, they can be useful fallbacks for debugging or automation.
 
 ### Creating a Project {-}
 To begin your first application, launch Android Studio (it may take a few minutes to open). From the Welcome screen, choose to "Start a new Android Studio Project". This will open up a wizard to walk you through setting up the project.
@@ -103,9 +104,11 @@ To begin your first application, launch Android Studio (it may take a few minute
 
 - Make a mental note of the project location so you can find your work later (e.g., if it's in `Desktop` or `Documents`).
 
-- On the next screen, you will need to pick the _Minimum SDK_ level that you wish to support&mdash;that is, what is the oldest version of Android your application will be able to run on? For this course, unless otherwise specified, you should target API 15 Ice Cream Sandwich (4.0.3) as a minimum, allowing your application to run on pretty much any Android device.
+- If you choose to "Include Kotlin Support", the application will be created with Kotlin rather han Java. Since we haven't learned Kotlin yet, we'll start with a Java example so the little code we look at is more familiar.
 
-	<p class="alert alert-info">Note that the Minimum SDK is different than the **Target SDK**, which is the version of Android your application has been tested and designed against. The Target SDK indicates what set of API features you have considered/coded against, even if your app can fall back to older devices that don't include those features. In many ways, the Target SDK is the "highest SDK I've worked with". For most of this course we will target either API 21 (Lollipop) or API 23 (Marshmallow).</p>
+- On the next screen, you will need to pick the _Minimum SDK_ level that you wish to support&mdash;that is, what is the oldest version of Android your application will be able to run on? For this course, unless otherwise specified, you should target API 19 KitKat (4.4) as a minimum, allowing your application to run on pretty much any Android device.
+
+	<p class="alert alert-info">Note that the Minimum SDK is different than the **Target SDK**, which is the version of Android your application has been tested and designed against. The Target SDK indicates what set of API features you have considered/coded against, even if your app can fall back to older devices that don't include those features. In many ways, the Target SDK is the "highest SDK I've worked with". For most of this course we will target API 24 (Nougat).</p>
 
 - On the next screen, select to start with an _Empty Activity_. **Activities** are the basic component of Android, each of which acts as a "screen" or "page" in your app. Activities are discussed in more detail in the next lecture.
 
@@ -114,7 +117,7 @@ To begin your first application, launch Android Studio (it may take a few minute
 ### Running the App {-}
 You can run your app by clicking the "Play" or "Run" button at the top of the IDE. But you'll need an Android Device to run the app on... luckily, Android Studio comes with one: a virtual [Android Emulator](https://developer.android.com/studio/run/emulator.html). This virtual machine models emulates a generic device with hardware you can specify, though it does have some limitations (e.g., no cellular service, no bluetooth, etc).
 
-- While it has improved recently, the emulator historically does not work very well on Windows&mdash;it runs very, very slowly.
+- While it has improved recently, the emulator historically does not work very well on Windows&mdash;it runs very slowly (though it is improving!).
 The best way to speed the emulator up on any operating system is to make sure you have enabled [HAXM](https://software.intel.com/en-us/android/articles/intel-hardware-accelerated-execution-manager) (Intel's Acceleration Manager which allows the emulator to utilize your GPU for rendering): this speeds things up considerably.
 
 	You can usually install this through Android Studio: go to `Tools > Android > SDK Manager` to open up the SDK manager for downloading different versions of the Android SDK and other support software. Under "SDK Tools", find "Intel x86 Emulator Accelerator (HAXM installer)", check it, and hit "OK" to download. Note that you may need to do additional installation/configuration manually, see the guides ([Mac](https://software.intel.com/en-us/android/articles/installation-instructions-for-intel-hardware-accelerated-execution-manager-mac-os-x), [Windows](https://software.intel.com/en-us/android/articles/installation-instructions-for-intel-hardware-accelerated-execution-manager-windows)).
@@ -126,9 +129,9 @@ The best way to speed the emulator up on any operating system is to make sure yo
 
 In order to create an emulator for your machine, go to `Tools > Android > AVD Manager` to open up the _Android Virtual Device_ Manager. You can then choose "Create Virtual Device..." in order to launch the wizard to specify a new emulator.
 
-- The **Nexus 5** is a good choice of hardware profile for making sure you support "older" devices. The Nexus 5X or Pixel are also reasonable device profiles to test against.
+- The **Pixel 2** is a good choice of hardware profile. The Nexus 5X is also reasonable for an "older" device.
 
-- For now, you'll want to use a system image for Lollipop API 21 or 22, and almost certainly on x86 (Intel) hardware. Make sure to select one that includes the Google APIs (so you have access to special Google classes).
+- For now, you'll want to use a system image for Nougat API 24, and almost certainly on x86 (Intel) hardware. Make sure to select one that includes the Google APIs (so you have access to special Google libraries).
 
 - The advanced settings can be used to specify things like the camera and whether it accepts keyboard input (should be on by default). These settings can always be changed later.
 
@@ -147,7 +150,7 @@ In the Android view, files are organized as follows:
 
 - `app/` folder contains our application source code
 	- `manifests/` contains the **Android Manifest** files, which is sort of like a "config" file for the app
-	- `java/` contains the **Java** source code for your project. This is where the "logic" of the application goes
+	- `java/` contains the **Java** source code for your project. This is where the "logic" of the application goes. (This is still called `java/` even if it contains Kotlin code!)
 	- `res/` contains **XML resource** files used in the app. This is where we will put layout/appearance information
 - `Gradle Scripts` contains scripts for the [Gradle](https://gradle.org/) build tool, which is used to help compile the source code for installation on an device.
 
@@ -167,13 +170,13 @@ There are a large number of different kinds of resources, which are organized in
 - `res/values/`: contains XML definitions for general constants
 </div>
 
-There are other kinds of resources as well: see [Available Resources](https://developer.android.com/guide/topics/resources/available-resources.html) or Lecture 2 for details.
+There are other kinds of resources as well: see [Available Resources](https://developer.android.com/guide/topics/resources/available-resources.html) or _[Resources and Layouts]_ for details.
 
 The most common resource you'll work out are the **layout** resources, which are XML files that specify the visual layout of the component (like the HTML for a web page).
 
 If you open a layout file (e.g., `activity_main.xml`) in Android Studio, by default it will be shown in a "Design" view. This view lets you use a graphical system to lay out your application, similar to what you might do with a PowerPoint slide. _Click the "Text" tab at the bottom to switch to the XML code view._
 
-- Using the design view is frowned upon by many developers for historical resources, even as it becomes more powerful with successive versions of Android Studio. It's often cleaner and more effective to write out the layouts and content in direct XML code. This is the same difference between writing your own HTML and using something like FrontPage or DreamWeaver or Wix to create a page. While those are legitimate applications, they are seen as less "professional". This course will focus on the XML code for creating layouts, rather than utilizing the design tool. See [here]() for more on its features.
+- Using the design view is frowned upon by many developers for historical resources, even as it becomes more powerful with successive versions of Android Studio. It's often cleaner and more effective to write out the layouts and content in direct XML code. This is sort of the same difference between writing your own HTML and using something like DreamWeaver or Wix to create a page. While those are legitimate applications, they are seen as less "professional". This course will focus on the XML code for creating layouts, rather than utilizing the design tool. See [here](https://developer.android.com/studio/write/layout-editor) for more on its features.
 
 In the code view, you can see the XML: tags, attributes, values. Elements are nested inside one another. The provided XML code defines a layout (a `<android.support.constraint.ConstraintLayout>`) to organize things, and inside that is a `<TextView>` (a [View](https://developer.android.com/reference/android/view/View.html) representing some text).
 
@@ -192,9 +195,9 @@ You will be able to specify what your app looks like by creating these XML layou
 	 />
 ```
 
-This XML defines a Button. The `android:text` attribute in this case specifies what text is shown on the button. Lecture 2 will describe in more detail the meaning of the other attributes, but you should be able to make a pretty good educated guess based on the names.
+This XML defines a Button. The `android:text` attribute in this case specifies what text is shown on the button. _[Resources and Layouts]_ will describe in more detail the meaning of the other attributes, but you should be able to make a pretty good educated guess based on the names.
 
-- (You can keep the `app:` scoped attributes if you want the button to stay in the center of the screen. Positioning will be discussed in Lecture 2).
+- (You can keep the `app:` scoped attributes if you want the button to stay in the center of the screen. Positioning will be discussed in _[Resources and Layouts]_).
 
 
 ### The Manifest {-}
@@ -212,13 +215,15 @@ Writing Android code will feel a lot writing any other Java program: you create 
 
 - In web terms, this is closer to working with Angular (a framework) than jQuery (a library).
 
-So while you can and will implement "normal" Java classes and models in your code, you will most frequently be utilizing classes a specific set of classes required by the framework, giving Android applications a common structure.
+- Writing in Kotlin instead of Java just means you use different syntax to produce basically the same code and logic.
 
-The most basic component in an Android program is an **Activity**, which represents a single screen in the app (see Lecture 3 for more details). The default provided `MainActivity` class is an example of this: the class _extends_ [`Activity`](http://developer.android.com/reference/android/app/Activity.html) (actually it extends a subclass that supports Material Design components), allowing you to make your own customizations to the app's behavior within the Android framework.
+So while you can and will implement "normal" Java classes and models in your code, you will most frequently be utilizing a specific set of classes required by the framework, giving Android applications a common structure.
 
-In this class, we _override_ the inherited `onCreate()` method that is called by the framework when the Activity starts&mdash;this method thus acts a little bit like the constructor for a class (though see Lecture 3 for a more nuanced discussion).
+The most basic component in an Android program is an **Activity**, which represents a single screen in the app (see _[Activities]_ for more details). The default provided `MainActivity` class is an example of this: the class _extends_ [`Activity`](http://developer.android.com/reference/android/app/Activity.html) (actually it extends a subclass that supports Material Design components), allowing you to make your own customizations to the app's behavior within the Android framework.
 
-We call the super method to make sure the framework does it stuff, and then `setContentView()` to specify what the content (appearance) of the Activity should be. This is passed in a value from something called `R`. `R` is a class that is **generated at compile time** and contains constants that are defined by the XML "resource" files! Those files are converted into Java variables, which we can access through the `R` class. Thus `R.layout.activity_main` refers to the `activity_main` layout found in the `res/layouts/` folder. That is how Android knows what layout file to show on the screen.
+In this class, we _override_ the inherited `onCreate()` method that is called by the framework when the Activity starts&mdash;this method thus acts a little bit like the constructor for a class (though see _[Activities]_ for a more nuanced discussion).
+
+We call the `super` method to make sure the framework does it stuff, and then `setContentView()` to specify what the content (appearance) of the Activity should be. This is passed in a value from something called `R`. `R` is a class that is **generated at compile time** and contains constants that are defined by the XML "resource" files! Those files are converted into Java variables, which we can access through the `R` class. Thus `R.layout.activity_main` refers to the `activity_main` layout found in the `res/layouts/` folder. That is how Android knows what layout file to show on the screen.
 
 
 #### Dalvik {-}
@@ -232,9 +237,13 @@ Dalvik does include JIT ("Just In Time") compilation to native code that runs mu
 
 However, _from Lollipop (5.0) on_, Android instead uses [Android Runtime (ART)](https://source.android.com/devices/tech/dalvik/) to run code. ART's biggest benefit is that it compiles the `.dex` bytecode into native code _at installation_ using AOT ("Ahead of Time") compilation. ART continues to accept `.dex` bytecode for backwards compatibility (so the same dexing process occurs), but the code that is actually installed and run on a device is native. This allows for applications to have faster execution, but at the cost of longer install times&mdash;and since you only install an application once, this is a pretty good trade.
 
+(Kotlin _also_ is compiled into `.dex` bytecode, so it ends up in the same place as Java).
+
 After being built, an Android application (the source, dexed bytecode, and any non-code resources such as images) are packaged into an **`.apk`** file. This are basically zip files (it uses the same gzip compression); if you rename the file to be `.zip` and you can uncompress it! The `.apk` file is then [cryptographically signed](https://en.wikipedia.org/wiki/Digital_signature) to specify its authenticity, and either "side-loaded" onto the device or uploaded to an App Store for deployment.
 
 - In short: the signed `.apk` file is basically the "executable" version of your program!
+
+- Google is in the process of deprecating `.apk` files and replacing them with [Android App Bundles](https://developer.android.com/platform/technology/app-bundle/). These contain all of the compiled source code, but offloads APK generation and app signing to the Play Store.
 
 - Note that the Android application framework code (e.g., the base `Activity` class) is actually "pre-DEXed" (pre-compiled) on the device; when you write code, you're compiling against empty code stubs (rather than needing to include those classes in your `.apk`)! That said, any other 3rd-party libraries you include will be copied into your built app, which can increase its file size both for installation and on the device.
 
@@ -245,7 +254,7 @@ After being built, an Android application (the source, dexed bytecode, and any n
 To summarize, after writing your Java and XML source code, in order to "build" and run your app you need to:
 
 1. Generate Java source files (e.g., `R`) from the XML resource files
-2. Compile the Java code into JVM bytecode
+2. Compile the Java (or Kotlin) code into JVM bytecode
 3. "dex" the JVM bytecode into Dalvik bytecode
 4. Pack code and other assets into an `.apk`
 5. Cryptographically sign the `.apk` file to authorize it
@@ -269,7 +278,7 @@ It is possible to customize the build script by modifying the Gradle script file
 <p class="alert alert-info">Note that older Android applications were developed using [Apache ANT](http://ant.apache.org/). The build script was stored in the `build.xml` file, with `build.properties` and `local.properties` containing global and local build settings. While Gradle is more common these days, you should be aware of ANT for legacy purposes.</p>
 
 <div class="alert alert-info">
-It is also possible to use Gradle to [build and install your app from the command-line](http://developer.android.com/tools/building/building-cmdline.html) if you want. You'll need to make sure that you have a device (either physical or virtual) connected and running. Then from inside the project folder, you can build and install your app with
+It is also possible to use Gradle to [build and install your app from the command line](http://developer.android.com/tools/building/building-cmdline.html) if you want. You'll need to make sure that you have a device (either physical or virtual) connected and running. Then from inside the project folder, you can build and install your app with
 
 ```bash
 # use the provided Gradle wrapper to run the `installDebug` script
@@ -324,13 +333,13 @@ You can view the logs via `adb` (the debugging bridge) and a service called `Log
 
 You can use the dropdown box to filter by priority, and the search box to search (e.g., by tag if you want). Android Studio also lets you filter to only show the current application, which is hugely awesome. Note that you may see a lot of Logs that you didn't produce, including possibly Warnings (e.g., I see a lot of stuff about how OpenGL connects to the graphics card). _This is normal_!
 
-It is also possible to view Logcat through the command-line using `adb`, and includes complex filtering arguments. See [Logcat Command-line Tool](https://developer.android.com/studio/command-line/logcat.html) for more details.
+It is also possible to view Logcat through the command line using `adb`, and includes complex filtering arguments. See [Logcat Command-line Tool](https://developer.android.com/studio/command-line/logcat.html) for more details.
 
 - Something else to test: Cause the app to throw a runtime `Exception`! For example, you could make a new local array and try to access an item out of bounds. Or just `throw new RuntimeException()` (which is slightly less interesting). _Can you see the **Stack Trace** in the logs?_
 
-Logging is fantastic and one of the the best techniques we have for debugging, both in how Activities are being used or for any kind of bug (also `RuntimeExceptions`). It harkens back to printline debugging, which is still a legitimate debugging process.
+Logging is fantastic and a great techniques for debugging, both in how Activities are being used or for any kind of bug (also `RuntimeExceptions`). It harkens back to printline debugging, which is still a legitimate debugging process thank you very much.
 
-<p class="alert alert-info">Note that Android Studio does have a built-in [debugger](https://developer.android.com/studio/debug/index.html) if you're comfortable with such systems.</p>
+<p class="alert alert-info">Note that Android Studio does have a built-in [debugger](https://developer.android.com/studio/debug/index.html) if you're comfortable with such systems. We'll talk about this more during a future lab.</p>
 
 
 ### Toast {-}
@@ -366,9 +375,9 @@ First, we need to get access to a variable that represents the `Button` we defin
 Button button = (Button)findViewById(R.id.my_button);
 ```
 
-As an argument, we pass in a value defined in the _auto-generated_ `R` class that represents the button's `id` value&mdash;this is based on what we put in the `<Button>`'s `android:id` attribute. The exact format is discussed in Lecture 2.
+As an argument, we pass in a value defined in the _auto-generated_ `R` class that represents the button's `id` value&mdash;this is based on what we put in the `<Button>`'s `android:id` attribute. The exact format is discussed in _[Resources and Layouts]_.
 
-- Note that the method returns a `View` (a superclass of `Button`), so we almost always _typecast_ the result. See Lecture 2 for more on the `View` class.
+- Note that the method returns a `View` (a superclass of `Button`), so we almost always _typecast_ the result. See _[Resources and Layouts]_ for more on the `View` class.
 
 We can then register a listener (callback) by calling the `setOnClickListener()` method and passing in an **anonymous class** to act as the listener:
 
@@ -383,3 +392,16 @@ button.setOnClickListener(new View.OnClickListener() {
 <p class="alert alert-info">**Tab completion** is your friend!! Try just typing the `button.`, and then selecting the method name from the provided list. Similarly, you can begin to type `new OnClick` and then tab-complete the rest of the class definition. The Android Studio IDE makes this ubiquitous boilerplate code easy to produce.</p>
 
 Finally, we can fill in the method to have it log out or toast something when clicked!
+
+
+## Kotlin {#kotlin-setup}
+
+As mentioned above, Android Studio now provides the ability to write the "logic" for your applications in [**Kotlin**](https://kotlinlang.org/) rather than Java. Kotlin is discussed in more detail in a later lecture, but this section will give you a quick taste of how to use Kotlin in an Android application.
+
+There are two ways to include Kotlin in your Android application:
+
+1. You can use Kotlin when you first create a project in Android Studio by clicking the "Include Kotlin Support" option. This will cause your initial activity to become a Kotlin file (e.g., `MainActivity.kt`) instead of a Java file.
+
+2. It is also possible to use Android Studio to _convert_ a Java file into a Kotlin file! To do this, you can use the `Code > Convert Java File to Kotlin File` command from the main menu, or invoke a [Find Action](https://www.jetbrains.com/idea/help/navigating-to-action.html) with `shift-cmd-a`. This will cause Android Studio to refactor your Java code into Kotlin code, replacing all of the Java Syntax with Kotlin syntax.
+
+You'll notice that _most_ of the code looks the same&mdash;some punctuation has moved around and a few words are missing, but otherwise it's the same setup. The specific differences and details of the language are discussed in the _[Kotlin]_ lecture.
