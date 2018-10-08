@@ -247,7 +247,7 @@ public class GiftBox<T> {...}
 
 And then everywhere you would have put a datatype (e.g., `TeddyBear`), you can just put the `T` variable instead. This will be replace by an _actual_ type **at compile time**.
 
-- Warning: _always_ use single-letter variable names for generic types! If you try to name it something like `String` (e.g., `public class GiftBox<String>`), then Java will interpret the word `String` to be that variable type, rather than refering to the `java.lang.String` class. This a lot like declaring a variable `int Dog = 448`, and then calling `Dog.createPuppies()`.
+- Warning: _always_ use single-letter variable names for generic types! If you try to name it something like `String` (e.g., `public class GiftBox<String>`), then Java will interpret the word `String` to be that variable type, rather than referring to the `java.lang.String` class. This a lot like declaring a variable `int Dog = 448`, and then calling `Dog.createPuppies()`.
 
 ___Practice: Try to make the `GiftBox` class generic and instantiate a new `GiftBox<Husky>`___
 

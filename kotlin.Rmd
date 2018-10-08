@@ -1,3 +1,8 @@
+<!-- 
+Didn't have time for practice, but otherwise got everything for variables/functions (more background/practice/etc for higher order functions needed; not sure everyone remembered from JavaScript)
+ -->
+
+
 # Special Topics: Kotlin {#kotlin}
 <p class="alert alert-danger">This chapter is out of date and will be updated soon.</p>
 
@@ -12,10 +17,10 @@ This lecture introduces [Kotlin](https://kotlinlang.org/), an open source progra
 ## Kotlin Syntax
 The Kotlin language draws many syntactical structures from popular modern languages, including JavaScript and [Swift](https://developer.apple.com/library/content/documentation/Swift/Conceptual/Swift_Programming_Language/) (used for iOS development); I find it has a lot in common with [TypeScript](https://www.typescriptlang.org/).
 
-The full documentation for the Kotlin language can be found at <https://kotlinlang.org/docs/reference/>; practice and examples are available in the form of [Kotlin Koans](https://kotlinlang.org/docs/tutorials/koans.html). This lecture does not aim to be a complete reference but rather to highlight some of the most noticable or interesting aspects of the langauge.
+The full documentation for the Kotlin language can be found at <https://kotlinlang.org/docs/reference/>; practice and examples are available in the form of [Kotlin Koans](https://kotlinlang.org/docs/tutorials/koans.html). This lecture does not aim to be a complete reference but rather to highlight some of the most noticeable or interesting aspects of the language.
 
 ### Variables
-Kotlin variables are _declared_ by using the keyword **`var`** (for mutable variables) or **`val`** (for read-only variables); this is similar to `let` and `const` in JavaScript ES5. Like Java, Kotlin is a statically-typed language&mdash;the variable type is written _after_ the variablen name, separated by a colon (**`:`**). For example:
+Kotlin variables are _declared_ by using the keyword **`var`** (for mutable variables) or **`val`** (for read-only variables); this is similar to `let` and `const` in JavaScript ES5. Like Java, Kotlin is a statically-typed language&mdash;the variable type is written _after_ the variable name, separated by a colon (**`:`**). For example:
 
 ```kotlin
 val x:Int = 448  //read-only
@@ -97,7 +102,7 @@ Kotlin functions are in some ways closer to JavaScript functions that to Java me
 ```kotlin
 fun makeFullName(first:String, last:String): String {
     val full = first + " " + last
-    reurn full
+    return full
 }
 
 val fullName = makeFullName("Ada", "Jones")

@@ -87,7 +87,9 @@ Resources res = this.getResources(); //get access to application's resources
 String myString = res.getString(R.string.myString); //look up value of that resource
 ```
 
-- The other comment method that utilizes resources will be `findViewById(int)`, which is used to reference a `View` element (e.g., a button) specified in a layout resource in order to call methods on it in Java, as in the example from the previous lecture.
+- The other common method that utilizes resources will be `findViewById(int)`, which is used to reference a `View` element (e.g., a button) specified in a layout resource in order to call methods on it in Java, as in the example from the previous lecture.
+
+	<p class="alert alert-info">The [Kotlin Android Extension](https://kotlinlang.org/docs/tutorials/android-plugin.html) will allow you to `import` layouts directly into Kotlin, so you don't need to use `findViewById()`.</p>
 
 <p class="alert alert-warning">The `R` class is regenerated all time (any time you change a resource, which is often); when Eclipse was the recommend Android IDE, you often needed to manually regenerate the class so that the IDE's index would stay up to date! You can perform a similar task in Android Studio by using `Build > Clean Project` and `Build > Rebuild Project`.</p>
 
@@ -187,6 +189,8 @@ Once you have a reference to a View object in Java, it is possible to specify vi
 
 - Views also have inspection methods such as `isVisible()` and `hasFocus()` if you need to check the View's state.
 
+- If you're using the Kotlin Android Extension, you can access these properties directly.
+
 <p class="alert alert-warning">**DO NOT** instantiate or define Views or View appearances in an Activity's `onCreate()` method, unless the properties (e.g., content) truly cannot be determined before runtime! **DO** specify layouts in the XML instead.</p>
 
 ### Practice {-}
@@ -195,10 +199,15 @@ Add a new [`ImageView`](http://developer.android.com/reference/android/widget/Im
 You should specify the content of the image in the XML resource using the `android:src` attribute (use `@` to reference a `drawable`), but you can specify the content dynamically in Java code if you want to change it later.
 
 ```java
+//java
 ImageView imageView = (ImageView)findViewById(R.id.img_view);
 imageView.setImageResource(R.drawable.my_image);
 ```
-
+```kotlin
+//kotlin
+val imageView:ImageView = findViewById<ImageView>(R.id.img_view)
+imageView.setImageResource(R.drawable.my_image);
+```
 
 ## Layouts
 As mentioned above, a [Layout](https://developer.android.com/guide/topics/ui/declaring-layout.html) is a grouping of Views (specifically, a `ViewGroup`). A Layout acts as a container for other Views, to help structure the elements on the screen. Layouts are all subclasses of [`ViewGroup`](https://developer.android.com/reference/android/view/ViewGroup.html), so you can use its inheritance documentation to see a (mostly) complete list of options, though many of the listed classes are deprecated in favor of later, more generic/powerful options.
@@ -269,8 +278,15 @@ As one option, you can _statically_ include XML layouts inside other layouts by 
 But it is also possible to dynamically load views "manually" (e.g., in Java code) using the [`LayoutInflator`](https://developer.android.com/reference/android/view/LayoutInflater.html). This is a class that has the job of "inflating" (rendering) Views. LayoutInflator is implicitly used in the `setContentView()` method, but can also be used independently with the following syntax:
 
 ```java
+//java
 LayoutInflator inflator = getLayoutInflator(); //access the inflator (called on the Activity)
 View myLayout = inflator.inflate(R.layout.my_layout, parentViewGroup, true); //to attach
+```
+
+```kotlin
+//kotlin
+val inflator: LayoutInflator = getLayoutInflator(); //access the inflator (called on the Activity)
+val myLayout: View = inflator.inflate(R.layout.my_layout, parentViewGroup, true); //to attach
 ```
 
 Note that we never instantiate the `LayoutInflator`, we just access an object that is defined as part of the Activity.
@@ -297,6 +313,11 @@ However, for dynamic View creation explicit inflation tends to be messy and hard
 //Java
 ViewStub stub = (ViewStub)findViewById(R.id.stub);
 View inflated = stub.inflate();
+```
+```kotlin
+//kotlin
+val stub = findViewById<ViewStub>(R.id.stub);
+val inflated: View = stub.inflate();
 ```
 
 There are many other options for displaying or changing View content. Just remember to define as much of the View as possible in the XML, so that the Java code is kept simple and separate.
@@ -340,7 +361,12 @@ It is also possible to specify the callback method in the XML resource itself by
 The callback method is declared in the Java code as taking in a `View` parameter (which will be a reference to whatever View caused the event to occur) and returning `void`:
 
 ```java
+//java
 public void handleButtonClick(View view) { }
+```
+```kotlin
+//kotlin
+fun handleButtonClick(view: View) { }
 ```
 
 We will utilize a mix of both of these strategies (defining callbacks in both the Java and the XML) in this class.
