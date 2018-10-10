@@ -29,7 +29,7 @@ If you look at the default Empty `MainActivity`, it actually subclasses [`AppCom
 There are a number of other built-in `Activity` subclasses that we could subclass instead. We'll mention them as they become relevant. Many of the available classes have been deprecated in favor of **Fragments**, which are sort of like "sub-activities" that get nested in larger Activities. Fragments will be discussed in a later lecture.
 
 ## The Activity Lifecycle `r #[10min]`
-An important point to note: does this Activity have a **constructor** that we call? _No!_ We never write code that **instantiates** our Activity (that is: we never call `new MainActivity()`). There is no `main()` method in Android. Activities are created and managed by the Android operating system when the app is launched.
+An important point to note: does this Activity have a **constructor** that we call? _No!_ We never write code that **instantiates** our Activity (that is: we never call `MainActivity()`). There is no `main()` method in Android. Activities are created and managed by the Android operating system when the app is launched.
 
 Although we never call a constructor or `main()` method, Activities do have an very well-defined [lifecycle](https://developer.android.com/guide/components/activities/activity-lifecycle.html)&mdash;that is, a series of **events** that occur during usage (e.g., when the Activity is created, when it is stopped, etc).
 
@@ -99,6 +99,7 @@ For example, the `Bundle` can store state information for View elements, such as
 You can also add your own custom information to the `Bundle` by overriding the Activity's `onSaveInstanceState()` callback (use the one for `AppCompactActivity` that only takes one parameter). It takes as a parameter the `Bundle` that is being constructed with the saved data: you can add more information to this Bundle using an appropriate `put()` method (similar to the method used for Maps, but type-sensitive):
 
 ```java
+//java
 //declare map key as a constant
 private static final String MSG_KEY = "message_key";
 
@@ -109,6 +110,18 @@ protected void onSaveInstanceState(Bundle outState) {
 	super.onSaveInstanceState(outState);
 }
 ```
+```kotlin
+//kotlin
+//declare map key as a constant
+private val MSG_KEY = "message_key";
+
+override fun onSaveInstanceState(outState: Bundle) {
+	//put value "Hello World" in bundle with specified key
+	outState.putString(MSG_KEY, "Hello World");
+	super.onSaveInstanceState(outState);
+}
+```
+
 
 - Note that you should always declare Bundle keys as _CONSTANTS_ to help with readability/modifiability and to catch typos.
 
@@ -117,6 +130,7 @@ protected void onSaveInstanceState(Bundle outState) {
 You can access this saved Bundle from the Activity's `onCreate()` method when the Activity is recreated. Note that if the Activity is being created for the _first time_, then the Bundle will be `null`&mdash;checking for a null value is thus a good way to check if the Activity is being recreated or not:
 
 ```java
+//java
 protected void onCreate(Bundle savedInstanceState) {
 	super.onCreate(savedInstanceState);
 
@@ -128,6 +142,20 @@ protected void onCreate(Bundle savedInstanceState) {
 	}
 }
 ```
+```kotlin
+//kotlin
+override fun onCreate(savedInstanceState: Bundle?) {
+	super.onCreate(savedInstanceState);
+
+	if(savedInstanceState != null){ //Activity has been recreated
+		val msg:String = savedInstanceState.getString(MSG_KEY);
+	}
+	else { //Activity created for first time
+
+	}
+}
+```
+
 
 Remember that a `Bundle` can only hold a _small_ amount of primitive data: just a couple of numbers or Strings. For more complex data, you'll need to use the alternative data storage solutions discussed in later lectures.
 
@@ -154,7 +182,7 @@ You'll need to refer to the Context whenever you want to do something beyond the
 ## Multiple Activities `r #[15mins]`
 The whole point of interfacing with the Activity Lifecycle is to handle the fact that Android applications can have multiple activities and interact with multiple other applications. In this section we'll briefly discuss how to include multiple Activities within an app (in order to sense how the lifecycle may affect them). Note that working with multiple Activities will be discussed in more detail in a later lecture.
 
-We can easily create a New Activity through Android Studio by using `File > New > Activity`. We could also just add a new `.java` file with the Activity class in it, but using Android Studio will also provide the `onCreate()` method stub as well as a layout resource.
+We can easily create a New Activity through Android Studio by using `File > New > Activity`. We could also just add a new `.java` or `.kt` file with the Activity class in it, but using Android Studio will also provide the `onCreate()` method stub as well as a layout resource.
 
 - For practice, make a new **Empty** Activity called `SecondActivity`. You should edit this Activity's layout resource so that the `<TextView>` displays an appropriate message.
 
@@ -174,12 +202,17 @@ In Android, we don't start new Activities by instantiating them (remember, _we n
 An [`Intent`](http://developer.android.com/reference/android/content/Intent.html) is an object we _can_ instantiate: for example, we can create a `new Intent` in the event handler for when we click the button on `MainActivity`. The `Intent` class has a number of different constructors, but the one we'll start with looks like:
 
 ```java
+//java
 Intent intent = new Intent(MainActivity.this, SecondActivity.class);
 ```
+```kotlin
+//kotlin
+val intent = Intent(this@MainActivity, SecondActivity::class.java)
+```
 
-The first parameter is the `Context` by which this Intent will be delivered (e.g., `this`). Note that we use the fully qualified `MainActivity.this` to indicate that we're not talking about the anonymous event handler class.
+The first parameter is the `Context` by which this Intent will be delivered (e.g., `this`). Note that we use the fully qualified `this@MainActivity` to indicate that we're not talking about the anonymous event handler class.
 
-The second parameter to this constructor is the `Class` we want to send the Intent to (the `.class` property fetches a reference to the class type; this is metaprogramming!). Effectively, it is the "address" on the envelop for the message we're sending.
+The second parameter to this constructor is the `Class` we want to send the Intent to (the `::class` refers to the `class` variable defined in `SecondActivity`, and the `.java` property gets the Java class reference that Android expects; this is metaprogramming!). Effectively, it is the "address" on the envelop for the message we're sending.
 
 After having instantiated the `Intent`, we can use that message to start an Activity by calling the <a href="http://developer.android.com/reference/android/app/Activity.html#startActivity(android.content.Intent)">`startActivity()`</a> method (inherited from `Activity`), and passing it the `Intent`:
 
@@ -220,8 +253,14 @@ We can make this "back" navigation a little more intuitive for users by providin
 - In the Java code, we want to add more functionality to the `ActionBar`. *Think*: which lifecycle callback should this specification be put in?
 
 	```java
+	//java
 	//specify that the ActionBar should have an "home" button
 	getSupportActionBar().setHomeButtonEnabled(true);
+	```
+	```kotlin
+	//kotlin
+	//can access the supportActoinBar directly (though assert it is not null)
+	supportActionBar!!.setHomeButtonEnabled(true)
 	```
 
 - Then in the **Manifest**, add an `android:parentActivityName` attribute to the `SecondActivity`, with a value set to the full class name (including package **and** appname!) of your `MainActivity`. This will let you be able to use the "back" visual elements (e.g., of the ActionBar) to move back to the "parent" activity. See [Up Navigation](https://developer.android.com/training/implementing-navigation/ancestral.html) for details.
