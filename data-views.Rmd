@@ -2,7 +2,7 @@
 
 # Data-Driven Views {#data-views}
 
-[Lecture 3](#resources-and-layouts) discussed how to use Views to display content and support user interaction. This lecture extends those concepts and presents techniques for creating **data-driven views**&mdash;views that can _dynamically_ present a data model in the form of a _scrollable list_. It also explains how to access data on the web using the [Volley](https://developer.android.com/training/volley/index.html) library. Overall, this process demonstrates a common way to connect the user interface for the app (defined as XML) with logic and data controls (defined in Java), following the **Model-View-Controller** architecture found throughout the Android framework.
+[A previous lecture](#resources-and-layouts) discussed how to use Views to display content and support user interaction. This lecture extends those concepts and presents techniques for creating **data-driven views**&mdash;views that can _dynamically_ present a data model in the form of a _scrollable list_. It also explains how to access data on the web using the [Volley](https://developer.android.com/training/volley/index.html) library. Overall, this process demonstrates a common way to connect the user interface for the app (defined as XML) with logic and data controls (defined in Java), following the **Model-View-Controller** architecture found throughout the Android framework.
 
 <p class="alert alert-info">This lecture references code found at <https://github.com/info448/lecture04-lists>.</p>
 
@@ -30,16 +30,16 @@ Thus in order to utilize a `ListView`, we'll have some data to be displayed (the
 
 In order to use a `ListView`, we need to get the pieces in place:
 
-1. First we specify the **model**: some raw data. We will start with a simple `String[]`, filling it with placeholder data:
+1. First we specify the **model**: some raw data. We will start with a simple list of Strings, filling it with placeholder data:
 
-	```java
-	String[] data = new String[99];
-	for(int i=99; i>0; i--){
-		data[99-i] = i+ " bottles of beer on the wall";
-	}
+	```kotlin
+	val data = mutableListOf<String>()
+	for(i in 99 downTo 1){
+		data.add(i.toString() + " bottles of beer on the wall")
+	}	
 	```
 
-	While we normally should define such hard-coded data as [an XML resource](https://developer.android.com/guide/topics/resources/string-resource.html#StringArray), we'll create it dynamically for testing (and to make it changeable later!)
+	While we normally should define such hard-coded data as [an XML resource](https://developer.android.com/guide/topics/resources/string-resource.html#StringArray), we'll create it dynamically for testing (and to make it changeable later!). Using a List instead of an Array makes it easier to construct (and works the same way).
 
 2. Next we specify the **view**: a `View` to show for each datum in the list. Define an XML layout resource for that (`list_item` is a good name and a common idiom).
 
@@ -61,18 +61,21 @@ To finish the controller `ListView`, we ned to provide it with an [`Adapter`](ht
 
 Specifically, we will use an [`ArrayAdapter`](https://developer.android.com/reference/android/widget/ArrayAdapter.html), which is one of the simplest Adapters to use (and because we have an array of data!) An `ArrayAdapter` creates Views by calling `.toString()` on each item in the array, and setting that `String` as the content of a `TextView`!
 
-```java
-ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+```kotlin
+//kotlin
+val adapter = ArrayAdapter<String>(this,
 	R.layout.list_item_layout, R.layout.list_item_txtView, myStringArray);
 ```
+
 
 - Note the parameters of the constructor: a `Context` to access resources, the layout resource to use for each item, the `TextView` within that layout (the target of the mapping), and the data array (the source of the mapping). Also note that this instance utilizes [_generics_](#generics): we're using an array of `Strings` (as opposed to an array of `Dogs` or some other type).
 
 We acquire a reference to the `ListView` with `findViewById()`, and call `ListView#setAdapter()` to attach the adapter to that controller.
 
-```java
-ListView listView = (ListView)findViewById(R.id.list_view);
-listView.setAdapter(adapter);
+```kotlin
+//kotlin 
+val listView = findViewById<ListView>(R.id.list_view)
+listView.setAdapter(adapter)
 ```
 
 And that's all that is needed to create a scrollable list of data! To track the process: the Adapter will go through each item in the _model_, and "translate" that item into the contents of a View. These Views will then be displayed in a scrollable list.
@@ -83,7 +86,11 @@ Each item in this list is selectable (can be given an `onClick` callback). This 
 
 Additionally, each item does have an individual layout, so you can customize these appearances (e.g., if our layout also wanted to include pictures). See [this tutorial](https://github.com/codepath/android_guides/wiki/Using-an-ArrayAdapter-with-ListView#row-view-recycling) for an example on making a custom adapter to fill in multiple `Views` with data from a list!
 
-<p class="alert alert-info">And remember, a `GridView` is basically the same thing (in fact, we can just change over that and have everything work, if we use _polymorphism_!)</p>
+<div class="alert alert-info"><p>And remember, a `GridView` is basically the same thing (in fact, we can just change over that and have everything work, if we use _polymorphism_!) Note that the data type for the `AdapterView` is a little thorny if you want to be generic about it:</p>
+```kotlin
+val adapterView = findViewById<AdapterView<ArrayAdapter<String>>>(R.id.list_view)
+```
+</div>
 
 <!--### **break**-->
 
@@ -123,9 +130,10 @@ The constructor for `StringRequest`, for example, takes 4 arguments:
 4. A `Response.ErrorListener` object, which defines a callback function to be executed in case of an error.
 </div>
 
-Because the last two _listener_ objects are usually defined with anonymous classes, this can make the Request constructor look more complicated than it is:
+Because the last two _listener_ objects are usually defined with anonymous classes, this can make the Request constructor look more complicated than it is (though Kotlin's use of lambdas helps):
 
 ```java
+//java
 //silly example: get 20 random dinosaur names
 String url = "http://dinoipsum.herokuapp.com/api/?format=text&words=20&paragraphs=1";
 
@@ -141,13 +149,26 @@ Request myRequest = new StringRequest(Request.Method.GET, url,
 			}
 		});
 ```
+```kotlin
+//kotlin
+val request = StringRequest(Request.Method.GET, urlString,
+		//callback for success
+		Response.Listener { response ->
+			Log.v(TAG, response)
+		}, 
+		//callback for failure
+		Response.ErrorListener { error -> 
+			Log.e(TAG, error.toString()) 
+		})
+```
 
-(Also note that the `Response.Listener` is a _generic_ class, in which we specify the format we're expecting the response to come back in. This is `String` for a `StringRequest`, but would be e.g., `JSONObject` for a `JsonObjectRequest`).
+(Also note that the `Response.Listener` is a _generic_ class, in which we specify the format we're expecting the response to come back in. This is `String` for a `StringRequest`, but would be e.g., `JSONObject` for a `JsonObjectRequest`). Kotlin handles some of this for us.
 
 In order to actually _send_ this Request, you need a [`RequestQueue`](https://afzaln.com/volley/com/android/volley/RequestQueue.html), which acts like a "dispatcher" and handles sending out the Requests on background threads and otherwise managing the network operations. We create a dispatcher with default parameters (for networking and caching) using the `Volley.newRequestQueue()` factory method:
 
-```java
-RequestQueue requestQueue = Volley.newRequestQueue(getApplicationContext());
+```kotlin
+//kotlin
+val requestQueue: requestQueue = Volley.newRequestQueue(this.applicationContext);
 ```
 
 The factory method takes in a Context for managing the cache; the best practice is to use the application's Context so it isn't dependent on a single Activity.
@@ -187,9 +208,10 @@ If you are going to make multiple network requests for your application (which y
 
 Instead, the best practice is to use the [Singleton Design Pattern](https://developer.android.com/training/volley/requestqueue.html#singleton) to ensure that your entire application only uses a _single_ RequestQueue.
 
-To do this, you will want to create an entire class (e.g., `RequestSingleton`) that will only ever be instantiated once (it will be a "singleton"). Since the Volley `RequestQueue` is controlled by this singleton, it means there will only ever be one `RequestQueue`.
+To do this, you will want to create an entire class (e.g., `VolleyService`) that will only ever be instantiated once (it will be a "singleton"). Since the Volley `RequestQueue` is controlled by this singleton, it means there will only ever be one `RequestQueue`.
 
 ```java
+//java
 public class RequestSingleton { //make static if an inner class!
 
 	//the single instance of this singleton
@@ -224,6 +246,39 @@ public class RequestSingleton { //make static if an inner class!
 	}
 }
 ```
+```kotlin
+//kotlin
+private class VolleyService 
+	private constructor(ctx: Context) { //private constructor; cannot instantiate directly
+	
+	companion object { //to hold the shared instances
+		private var instance: VolleyService? = null //the single instance of this singleton
+
+		//call this "factory" method to access the Singleton
+		fun getInstance(ctx: Context): VolleyService {
+			//only create the singleton if it doesn't exist yet
+			if (instance == null) {
+				instance = VolleyService(ctx)
+			}
+
+			return instance as VolleyService //force casting
+		}
+	}
+
+	//from Kotlin docs
+	val requestQueue: RequestQueue by lazy { //instantiate once needed
+		Volley.newRequestQueue(ctx.applicationContext) //return the context-based requestQueue
+	}
+
+	//convenience wrapper method
+	fun <T> add(req: Request<T>) {
+		requestQueue.add(req)
+	}
+}
+```
+
+
+See also the [JetBrains Kotlin Demo](https://github.com/JetBrains/kotlin-examples/tree/master/gradle/android-volley) of Volley for further examples
 
 This structure will let you make multiple network requests from multiple components of your app, but without trying to have multiple "dispatchers" taking up memory.
 
@@ -240,29 +295,25 @@ In order to effectively download images with Volley, you need to set up an [`Ima
 
 To instantiate an `ImageLoader`, you need to provide a `RequestQueue` as well as an `ImageCache` object that represents how image data should be cached (e.g., in memory, on disk, etc.). The Volley documentation suggests using a `LruCache` object for caching to memory (though you can use a `DiskBasedCache` as well):
 
-```java
-//instantiate the image loader
+```kotlin
+//kotlin
+//instantiate the image loader (from Kotlin docs)
 //params are the requestQueue and the Cache
-ImageLoader imageLoader = new ImageLoader(requestQueue,
-		new ImageLoader.ImageCache() {  //define an anonymous Cache object
-			//the cache instance variable
-			private final LruCache<String, Bitmap> cache = new LruCache<String, Bitmap>(20);
-
-			//method for accessing the cache
-			@Override
-			public Bitmap getBitmap(String url) {
-				return cache.get(url);
-			}
-
-			//method for storing to the cache
-			@Override
-			public void putBitmap(String url, Bitmap bitmap) {
-				cache.put(url, bitmap);
-			}
-		});
+val imageLoader: ImageLoader by lazy { //only instantiate when needed
+	ImageLoader(requestQueue,
+			object : ImageLoader.ImageCache { //anonymous cache object
+				private val cache = LruCache<String, Bitmap>(20)
+				override fun getBitmap(url: String): Bitmap? {
+					return cache.get(url)
+				}
+				override fun putBitmap(url: String, bitmap: Bitmap) {
+					cache.put(url, bitmap)
+				}
+			})
+}
 ```
 
-- It's a good idea to make this `ImageLoader` an instance variable of the `RequestSingleton`.
+- It's a good idea to make this `ImageLoader` an instance variable of the `VolleyService`.
 
 Once you have the `ImageLoader`, you can use it to download an image by calling it's <a href="https://afzaln.com/volley/com/android/volley/toolbox/ImageLoader.html#get(java.lang.String, com.android.volley.toolbox.ImageLoader.ImageListener)">`get()`</a> method, specifying a callback listener that will be executed when the image is finished downloading.
 
@@ -282,8 +333,8 @@ You declare a `NetworkImageView` in the layout XML in the same way you would spe
 
 In order to download an image into this View, you call the `setImageUrl()` method on the View from within your Java, specify the image url to load into the View and the `ImageLoader` to use for this network access:
 
-```java
-NetworkImageView netView = (NetworkImageView)findViewById(R.id.img_remote);
+```kotlin
+val imageView = findViewById<NetworkImageView>(R.id.img_remote)
 netView.setImageUrl("https://ischool.uw.edu/fb-300x300.png", imageLoader);
 ```
 
