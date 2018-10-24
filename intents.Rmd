@@ -20,12 +20,18 @@ Note that there are couple of different kinds of Intents; we'll go through examp
 The most basic kind of Intent is an Intent sent to a specific Activity/Context, such as for telling that Activity to open. This was the same type of Intent introduced in Lecture 3.
 
 ```java
+//java
 //                         context,           target
 Intent intent = new Intent(MainActivity.this, SecondActivity.class);
 startActivity(intent);
 ```
+```kotlin
+//kotlin
+//                  context,           target
+val intent = Intent(this@MainActivity, SecondActivity::class.java)
+```
 
-We instantiate the Intent (specifying the `Context`it should be delivered from and the `Class` it should be delivered to), and then use that message to start an Activity by delivering the intent via `startActivity()`.
+We instantiate the Intent (specifying the `Context`it should be delivered from and the `Class` it should be delivered to), and then use that message to start an Activity by delivering the Intent via the `startActivity()` method.
 
 - The `startActivity()` method effectively means "this is an Intent used to launch an Activity: whoever receives this Intent should start!" You can almost think of it as saying that the letters should be delivered to the "start activity" mailbox.
 
@@ -36,7 +42,7 @@ This type of Intent is called an **Explicit Intent** because we're _explicit_ ab
 We can also specify some extra data inside our envelope. These data are referred to as **Extras**. This is a `Bundle` (a set of primitive key-value pairs) that we can use to pass _limited_ information around!
 
 ```java
-intent.putExtra("package.name.key","value");
+intent.putExtra("package.name.key", "value");
 ```
 
 - The Android documentation notes that best practice is to include the full package name in Bundle keys, so avoid any collisions or misreading of data (since Intents can move outside of the Application). There are also some pre-defined key values (constants) that you can and will use in the `Intent` class.
@@ -44,38 +50,53 @@ intent.putExtra("package.name.key","value");
 We can then get the extras from the Intent in the Activity that receives it:
 
 ```java
+//java
 //in onCreate()
 Bundle extras = getIntent().getExtras(); //All activities are started with an Intent!
 String value = extras.getString("key");
+```
+```kotlin
+//kotlin
+val extras = intent.extras //All Activities are started with an Intent! (so have that property)
+val value = extras.getString("key")
 ```
 
 So we can have Activities communicate, and even share information between them! Yay!
 
 
 ## Intents for Another App (Implicit) `r #[10-15mins]`
-We can send Intents to our own Activities, but we can even address them to other applications. When calling on other apps, we usually use **Implicit Intents**.
+We can send Intents to our own Activities, but we can also address them to _other_ applications. When calling on other apps, we usually use an **Implicit Intent**.
 
 - This is a little bit like letters that have [weird addresses](http://www.theguardian.com/world/2015/jul/18/postman-turns-detective-to-deliver-letter-with-cryptic-address-in-ireland), but still get delivered. "For that guy at the end of the block with the red mailbox."
 
 An Implicit Intent includes an **Action** and some **Data**. The ___Action___ says what the target should _do_ with the intent (a Command), and the ___Data___ gives more detail about what to run that action on.
 
-- **Actions** can be things like `ACTION_VIEW` to view some data, or `ACTION_PICK` to choose an item from a list. See a full list under ["Standard Action Activities"](https://developer.android.com/reference/android/content/Intent.html).
+- **Actions** can be things like `ACTION_VIEW` to view some data, or `ACTION_PICK` to choose an item from a list. See a full list under ["Standard Action Activities"](https://developer.android.com/reference/android/content/Intent.html)^[https://developer.android.com/reference/android/content/Intent.html].
 
-  - `ACTION_MAIN` is the most common (just start the Activity as if it were a "main" launching point). So when we don't specify anything else, this is used!
+    - `ACTION_MAIN` is the most common (just start the Activity as if it were a "main" launching point). So when we don't specify anything else, this is used!
 
 - **Data** gives detail about what to do with the action (e.g., the Uri to `VIEW` or the Contact to `DIAL`).
 
-  - Extras then support this data!
+    - Extras then support this data!
 
 For example, if we specify a `DIAL` action, then we're saying that we want our Intent to be delivered to an application that is capable of dialing a telephone number.
 
-- _If there is more than one app that supports this action, the user will pick one!_ This is key: we're not saying exactly what app to use, just what kind of functionality we need to be supported! It's a kind of abstraction!
+- _If there is more than one app that supports this action, the user will need to pick one!_ This is key: we're not saying exactly what app to use, just what kind of functionality we need to be supported! It's a kind of abstraction!
 
 ```java
+//java
 Intent intent = new Intent(Intent.ACTION_DIAL);
 intent.setData(Uri.parse("tel:206-685-1622"));
 if (intent.resolveActivity(getPackageManager()) != null) {
   startActivity(intent);
+}
+```
+```kotlin
+//kotlin
+val intent = Intent(Intent.ACTION_DIAL)
+intent.data = Uri.parse("tel:206-685-1622")
+if (intent.resolveActivity(packageManager) != null) {
+    startActivity(intent)
 }
 ```
 
@@ -87,11 +108,11 @@ Note that we can open up all sorts of apps. See [Common Intents](https://develop
 
 
 ## Intents for a Response `r #[10-15min]`
-We've been using Intents to start Activities, but what if we'd like to get a result _back_ from the Activity? That is, what if we want to look up a Contact or take a Picture, and then be able to use the Contact's number or show the Picture?
+We've been using Intents to start Activities, but what if we'd like to get a result _back_ from the Activity? That is, what if we want to look up a Contact or take a picture, and then be able to use the Contact's number or show the picture?
 
 To do this, we're going to create Intents in the same way, but use a different method to launch them: `startActivityForResult()`. This will launch the resolved Activity. But once that Action is finished, the launched Activity will send _another_ Intent back to us, which we can then react to in order to handle the result.
 
-- This is a bit like including an "RSVP" note in a letter!
+- This is a bit like including an "urgent, please respond!" note on the letter!
 
 For fun, let's do it with the Camera&mdash;we'll [launch the Camera](http://developer.android.com/training/camera/photobasics.html) to take a picture, and then get the picture and show it in an `ImageView` we have.
 
@@ -99,6 +120,7 @@ For fun, let's do it with the Camera&mdash;we'll [launch the Camera](http://deve
 
 
 ```java
+//java
 static final int REQUEST_IMAGE_CAPTURE = 1;
 
 private void dispatchTakePictureIntent() {
@@ -108,29 +130,53 @@ private void dispatchTakePictureIntent() {
     }
 }
 ```
+```kotlin
+//kotlin
+private val REQUEST_IMAGE_CAPTURE = 1
 
-- We start by specifying an Intent that uses the `MediaStore.ACTION_IMAGE_CAPTURE` action (the action for "take a still picture and return it"). We will then send this Intent for a result, similar to other ImplicitIntents.
+fun dispatchTakePictureIntent() {
+    val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+    if (takePictureIntent.resolveActivity(packageManager) != null) {
+        startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
+    }
+}
+```
+
+- We start by specifying an Intent that uses the `MediaStore.ACTION_IMAGE_CAPTURE` action (the action for "take a still picture and return it"). We will then send this Intent for a result, similar to other Implicit Intents.
 
 - We also include a second argument: a "request code". A request code is used to distinguish this Intent from others we may send (kind of like a tag). It let's us know that the Result Intent (the "RSVP") is for our "took a picture" letter, and not for some other Intent we sent.
 
-- Note that we could pass an Extra for where we want to save the large picture file to. However, we're going to leave that off and just work with the thumbnail for this demonstration. See the [guide](http://developer.android.com/training/camera/photobasics.html#TaskPath)^[http://developer.android.com/training/camera/photobasics.html#TaskPath] for details; if time we can walk through it!
+- Note that we could pass an Extra for where we want to save the large picture file to. However, we're going to leave that off and just work with the thumbnail for this demonstration. See the [guide](http://developer.android.com/training/camera/photobasics.html#TaskPath)^[http://developer.android.com/training/camera/photobasics.html#TaskPath] for details. This topic is also covered in a later chapter.
 
 
 In order to handle the "response" Intent, we need to provide a callback that will get executed when that Intent arrives. This callback is called `onActivityResult()`.
 
 ```java
+//java
 @Override
 protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 	if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
 		Bundle extras = data.getExtras();
 		Bitmap imageBitmap = (Bitmap) extras.get("data");
 		ImageView imageView = (ImageView) findViewById(R.id.img_thumbnail);
-		imageView.setImageBitmap(imageBitmap);
+		imageView.setImageBitmap(imageBitmap); //show the image
 	}
 }
 ```
+```kotlin
+//kotlin
+override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
+    if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK) {
+        val extras = data.extras?.apply {
+            val imageBitmap = get("data") as Bitmap
+            val imageView = findViewById<ImageView>(R.id.img_thumbnail)
+            imageView.setImageBitmap(imageBitmap)
+        }
+    }
+}
+```
 
-- We can get information about the Intent we're receiving from the params, including which Intent let to the result (the `requestCode` and the status of that request (the <code><em>response</em>Code</code>). We can get access to the returned data (e.g., the image) by getting the `"data"` value from the extras.
+- We can get information about the Intent we're receiving from the params, including which Intent led to the result (the `requestCode`) and the status of that request (the <code><em>result</em>Code</code>). We can get access to the returned data (e.g., the image) by getting the `"data"` value from the extras.
 
 - Note that this is a [`Bitmap`](http://developer.android.com/reference/android/graphics/Bitmap.html), which is the Android class representing a raster image. We'll play with Bitmaps more in a couple weeks, because I like graphics.
 
@@ -138,13 +184,13 @@ protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 ## Listening for Intents `r #[10-15min]`
 We're able to send implicit Intents that can be heard by other Apps, but what if we wanted to receive Implicit Intents ourselves? What if _we_ want to be able to handle phone dialing?!
 
-In order to receive an Implicit Intent, we need to declare that our Activity is able to handle that request. Since we're specifying an aspect of our application, we'll do this in the `Manifest` using what is called an `<intent-filter>`.
+In order to receive an Implicit Intent, we need to declare that our Activity is able to handle that request. Since we're specifying an aspect of our application (that other apps need to be aware of), we'll do this in the `Manifest` using what is called an **`<intent-filter>`**.
 
 - The idea is that we're "hearing" all the intents, and we're "filtering" for the ones that are relevant to us. Like sorting out the junk mail.
 
 An `<intent-filter>` tag is nested inside the element that it applies to (e.g., the `<activity>`). In fact, you can see there is already one there: that responds to the `MAIN` action sent with the `LAUNCHER` category (meaning that it responds to Intents from the app launcher).
 
-Similarly, we can specify three "parts" of the filter:
+Similarly, we can specify three "parts" of a filter:
 
 - a `<action android:name="action">` filter, which describes the Action we can respond to.
 
@@ -154,7 +200,7 @@ Similarly, we can specify three "parts" of the filter:
 
   - Note that you _must_ include the `DEFAULT` category to receive Implicit Intents. This is the category used by `startActivity()` and `startActivityForResult()`.
 
-Note that you can include multiple actions, data, and category tags. You just need to make sure that you can handle all possible combinations selected from each type (they are "or" not "and" filters!)
+You can include multiple actions, data, and category tags. You just need to make sure that you can handle all possible combinations selected from each type (multiple types are combined with an "or", not an "and").
 
 Responding to that dial command:
 
@@ -163,7 +209,7 @@ Responding to that dial command:
   <intent-filter>
       <action android:name="android.intent.action.DIAL"/>
       <category android:name="android.intent.category.DEFAULT" />
-      <data android:scheme="tel" />
+      <data android:scheme="tel" /> <!-- telephone Uris -->
   </intent-filter>
 </activity>
 ```
@@ -176,27 +222,38 @@ There is one other kind of Intent I want to talk about today: [**Broadcasts**](h
 
 - To extend the snail mail metaphor, these are mass mailings perhaps.
 
-Other than who receives them, broadcasts work the same as normal Implicit Intents! We create an `Intent` with an Action and Data (and Category and Extras...). But instead of using the `startActivity()` method, we use the `sendBroadcast()` method. That intent can now be heard by all `Activities` on the phone.
+Other than who receives them, broadcasts work the same as normal Implicit Intents! We create an `Intent` with an Action and Data (and Category and Extras...). But instead of using the `startActivity()` method, we use the `sendBroadcast()` method. That Intent can now be heard by all `Activities` on the phone.
 
 - We'll skip a demo for lack of time and motivation... but we will generate broadcasts later in the course.
 
-Indeed, more common than sending broadcasts will be _receiving_ broadcasts; that is, we want to listen and respond to System broadcasts that are produced (things like power events, wifi status, etc). This would also include listening for things like incoming phone calls or text messages!
+For us, more common than sending broadcasts will be _receiving_ broadcasts; that is, we want to listen and respond to System broadcasts that are produced (things like power events, wifi status, etc). This would also include listening for things like incoming phone calls or text messages!
 
 We can receive broadcasts by using a [`BroadcastReceiver`](http://developer.android.com/reference/android/content/BroadcastReceiver.html). This is a base class that is used by any class that can receive broadcast Intents. We **subclass** it and implement the `onReceive(Context, Intent)` callback in order to handle when broadcasts are received.
 
 ```java
-public void onReceive(Context context, Intent intent)
-{
+//java
+public void onReceive(Context context, Intent intent) {
     Log.v("TAG", "received! "+intent.toString());
-    else if(intent.getAction() == Intent.ACTION_BATTERY_LOW){
+    if(intent.getAction() == Intent.ACTION_BATTERY_LOW){
         Toast.makeText(context, "Battery is low!", Toast.LENGTH_SHORT).show();
+    }
+}
+```
+```kotlin
+//kotlin
+override fun onReceive(context: Context, intent: Intent) {
+    Log.v("TAG", "received! ${intent.toString()}")
+    when(intent.action) {
+        Intent.ACTION_BATTERY_LOW -> {
+            Toast.makeText(context, "Battery is low!", Toast.LENGTH_SHORT).show();    
+        }
     }
 }
 ```
 
 - While we can use Android Studio to produce this; we're going to make it by hand to see all the steps.
 
-But in order to **register** our receiver (so that intents go past its desk), we also need to specify it in the `Manifest`. We do this by including a `<receiver>` attribute inside our `<application>`. Note that this is _not_ an Activity, but a separate component! We can put an `<intent-filter>` inside of this to filter for broadcasts we care about.
+But in order to **register** our receiver (so that Intents go past its desk), we also need to specify it in the `Manifest`. We do this by including a `<receiver>` element inside our `<application>`. Note that this is _not_ an Activity, but a separate component! We can put an `<intent-filter>` inside of this to filter for broadcasts we care about.
 
 ```xml
 <receiver android:name=".PowerReceiver">
@@ -210,13 +267,16 @@ But in order to **register** our receiver (so that intents go past its desk), we
 </receiver>
 ```
 
-We can test these power events easily using the latest version of the emulator. In the "extra options" button (the three dots at the bottom) in the emulator's toolbar, we can get to the `Battery` tab where we can effectively change the battery status of the device (which our app can respond to!). Remember to "disconnect" from the AC Charger!
+<p class="alert alert-warning">As of Oreo, registering for _implicit_ broadcasts in the Manifest is [not allowed](https://developer.android.com/about/versions/oreo/background#broadcasts) and will not be received correctly, with a [few exceptions](https://developer.android.com/guide/components/broadcast-exceptions). Instead, you would need to register receivers in code (described below). Note that setting the `targetSdk` to less than 25 is a temporary workaround.</p>
+
+We can test these power events easily using the emulator. In the "extra options" button (the three dots at the bottom) in the emulator's toolbar, we can get to the `Battery` tab where we can effectively change the battery status of the device (which our app can respond to!). Remember to "disconnect" from the AC Charger first!
 
 <!-- - Note that there is a `Phone` tab where you can send Text Messages to the emulator... you'll need this for your homework this week. -->
 
 We can also _register_ these receivers in code (rather than in the manifest). This is good for if we only want to temporarily listen for some kind of events, or if we want to determine the `intent-filter` on the fly:
 
 ```java
+//java
 IntentFilter batteryFilter = new IntentFilter();
 batteryFilter.addAction(Intent.ACTION_BATTERY_LOW);
 batteryFilter.addAction(Intent.ACTION_BATTERY_OKAY);
@@ -224,8 +284,18 @@ batteryFilter.addAction(Intent.ACTION_POWER_CONNECTED);
 batteryFilter.addAction(Intent.ACTION_POWER_DISCONNECTED);
 this.registerReceiver(new PowerReceiver(), batteryFilter);
 ```
+```kotlin
+//kotlin
+val batteryFilter = IntentFilter()
+batteryFilter.addAction(Intent.ACTION_BATTERY_LOW)
+batteryFilter.addAction(Intent.ACTION_BATTERY_OKAY)
+batteryFilter.addAction(Intent.ACTION_POWER_CONNECTED)
+batteryFilter.addAction(Intent.ACTION_POWER_DISCONNECTED)
+this.registerReceiver(PowerReceiver(), batteryFilter)
+```
 
-- We're dynamically declaring an `intent-filter` as well! This can be used not just for `BroadcastReceivers`, but `Activities` too, if you dynamically want to change if an Activity can receive an Intent.
+
+- We're dynamically declaring an `intent-filter` as well! This can be used not just for `BroadcastReceivers`, but `Activities` too, if you dynamically want to change if an Activity can receive an Intent (i.e., sometimes I can make phone calls, but sometimes I can't).
 
 
 ## Menus
@@ -261,18 +331,28 @@ It is possible to include **one level** of sub-menus (a `<menu>` element inside 
 In order to show the menu in the running application, we need to tell the Action Bar which menu resource it should use (there may be a lot of resources). To do this, we override the `onCreateOptionsMenu()` callback in the Activity or Fragment, and then use the component's `MenuInflater` object to expand the menu:
 
 ```java
+//java
 public boolean onCreateOptionsMenu(Menu menu) {
     MenuInflater inflater = getMenuInflater();
     inflater.inflate(R.menu.main_menu, menu); //inflate into this menu
     return true;
 }
 ```
+```kotlin
+//kotlin
+override fun onCreateOptionsMenu(menu: Menu): Boolean {
+    val inflater = menuInflater
+    inflater.inflate(R.menu.main_menu, menu) //inflate into this menu
+    return true
+}
+```
 
 - This procedure is similar in concept to how a Fragment's `onViewCreated()` method would inflate the Fragment into the Activity. In this case, the Menu is being inflated into the Action Bar.
 
-We can respond to the menu items being selected by overriding the `onOptionsItemSelected()` callback. By convention, we use a `switch` on the `item.getItemId()` to determine what item was selected, and then act accordingly.
+We can respond to the menu items being selected by overriding the `onOptionsItemSelected()` callback. By convention, in Java we use a `switch` on the `item.getItemId()` to determine what item was selected, and then act accordingly. In Kotlin, use a `when` expression that will be returned.
 
 ```java
+//java
 public boolean onOptionsItemSelected(MenuItem item) {
     switch(item.getItemId()){
         case R.id.menu_item1 :
@@ -283,12 +363,25 @@ public boolean onOptionsItemSelected(MenuItem item) {
     }
 }
 ```
+```kotlin
+//kotlin
+override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    return when (item.itemId) {
+        R.id.menu_item1 -> {
+            //do thing
+            true
+        }
+        else -> super.onOptionsItemSelected(item)
+    }
+}
+
+```
 
 - On `default` (if the item selected isn't handled by any cases), we pass the callback up to `super` for "higher-level" components to check. For example, if a the menu option isn't handled by the Fragment (because the Fragment didn't add it), the event can be passed up through the Framework for eventually handling by the Activity (who did add it).
 
 - This method should return `true` if the selection even has been handled (and thus should not be considered by anyone else). Return `false` if you want other components (e.g., other Fragments) to be able to respond to this option as well.
 
-There are many other menu items that can be placed on Action Bar as well. We can also add [Action Views](https://developer.android.com/training/appbar/action-views.html) that provide more complex interactions than just clicking buttons (for example, including a search bar). An [Action Provider](https://developer.android.com/training/appbar/action-views.html#action-provider) (like [`ShareActionProvider`](https://developer.android.com/training/sharing/shareaction.html)) is an action with its own customized layout, expanding into a separate View when clicked. We wil discuss how to utilize these features in a [future lecture](#intents).
+There are many other menu items that can be placed on Action Bar as well. We can also add [Action Views](https://developer.android.com/training/appbar/action-views.html) that provide more complex interactions than just clicking buttons (for example, including a search bar). An [Action Provider](https://developer.android.com/training/appbar/action-views.html#action-provider) (like [`ShareActionProvider`](https://developer.android.com/training/sharing/shareaction.html)) is an action with its own customized layout, expanding into a separate View when clicked.
 
 ### Action Views {-}
 In addition to these simple buttons, we can also include more complex expandable widgets called [Action Views](https://developer.android.com/training/appbar/action-views.html). The most common of these is a [SearchView](https://developer.android.com/reference/android/support/v7/widget/SearchView.html), which puts a "search field" in the App Bar!
@@ -311,6 +404,7 @@ We'll start by adding another item to our menu's XML. This will look like other 
 We'll then add the item to our menu in `onCreateOptionsMenu()`
 
 ```java
+//java
 MenuItem item = menu.findItem(R.id.menu_item_share);
 ShareActionProvider shareProvider = (ShareActionProvider)MenuItemCompat.getActionProvider(item);
 
@@ -318,6 +412,16 @@ Intent intent = new Intent(Intent.ACTION_DIAL);
 intent.setData(Uri.parse("tel:206-685-1622"));
 
 shareProvider.setShareIntent(intent);
+```
+```kotlin
+//kotlin
+val item = menu.findItem(R.id.menu_item_share)
+val shareProvider = MenuItemCompat.getActionProvider(item) as ShareActionProvider
+
+val intent = Intent(Intent.ACTION_DIAL)
+intent.data = Uri.parse("tel:206-685-1622")
+
+shareProvider.setShareIntent(intent)
 ```
 
 - We get access to the item using `findItem()` (similar to `findViewById()`), and then cast it to a `ShareActonProvider` (make sure you're using the support version!)
@@ -360,7 +464,7 @@ smsManager.sendTextMessage("5554", null, "This is a test message!", null, null);
 ```
 - `5554` is the default "phone number" of the emulator (the port it is running on).
 
-We will also need permission: `<uses-permission android:name="android.permission.SEND_SMS" />` (in the Manifest)
+We will also need permission: `<uses-permission android:name="android.permission.SEND_SMS" />` (in the Manifest). Note that you'll need to target SDK 22 or lower for this to work without extra details; see the lecture on Permissions for more information.
 
 You can see that this works by looking at the inbox in the Messages app... but there is another way as well! If you look at <a href="http://developer.android.com/reference/android/telephony/SmsManager.html#sendTextMessage(java.lang.String, java.lang.String, java.lang.String, android.app.PendingIntent, android.app.PendingIntent)">the documentation for this method</a>^[https://developer.android.com/reference/android/telephony/SmsManager.html], you can see that the last two parameters are for [`PendingIntents`](http://developer.android.com/reference/android/app/PendingIntent.html): one for when messages are sent and one for when messages are delivered.
 
