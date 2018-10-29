@@ -8,13 +8,13 @@ This lecture discusses some additional user interface components common to Andro
 ## Dialogs `r #[30min]`
 We have previously provided feedback to users via simple pop-ups such as [Toasts](https://developer.android.com/guide/topics/ui/notifiers/toasts.html) or [Snackbars](https://developer.android.com/training/snackbar/showing.html). However, sometimes you would like to show a more complex "pop-up" View&mdash;perhaps one that requires additional interaction.
 
-A [___Dialog___](https://developer.android.com/guide/topics/ui/dialogs.html)^[https://developer.android.com/guide/topics/ui/dialogs.html] is a "pop-up" [modal](https://en.wikipedia.org/wiki/Modal_window) (a view which doesn't fill the screen) that either asks the user to make a decision or provides some additional information. At their most basic, Dialogs are similar to the `window.alert()` function and its variants used in JavaScript.
+A [___Dialog___](https://developer.android.com/guide/topics/ui/dialogs.html)^[https://developer.android.com/guide/topics/ui/dialogs.html] is a "pop-up" [modal](https://en.wikipedia.org/wiki/Modal_window) (a view which doesn't fill the screen) that either asks the user to make a decision or provides some additional information. At it's most basic, Dialogs are similar to the `window.alert()` function and its variants used in JavaScript.
 
-There is a base `Dialog` class, but almost always we use a pre-defined subclass instead (similar to how we've use `AppCompatActivity`). [`AlertDialog`](https://developer.android.com/reference/android/support/v7/app/AlertDialog.html)^[https://developer.android.com/reference/android/support/v7/app/AlertDialog.html] is the most common version: a simple message that includes buttons you can respond with (confirm, cancel, etc).
+There is a base `Dialog` class, but almost always we use a pre-defined subclass instead (similar to how we've use `AppCompatActivity`). [`AlertDialog`](https://developer.android.com/reference/android/support/v7/app/AlertDialog.html)^[https://developer.android.com/reference/android/support/v7/app/AlertDialog.html] is the most common version: a simple message with buttons you can respond with (confirm, cancel, etc).
 
-We don't actually instantiate an `AlertDialog` directly (in fact, it's constructors are `protected` so inaccessible to us). Instead we use a helper _factory_ class called an [`AlertDialog.Builder`](https://developer.android.com/reference/android/support/v7/app/AlertDialog.Builder.html). There are a number of steps to use a builder to create a Dialog:
+We don't actually instantiate an `AlertDialog` directly (in fact, its constructors are `protected` so inaccessible to us). Instead we use a helper _factory_ class called an [`AlertDialog.Builder`](https://developer.android.com/reference/android/support/v7/app/AlertDialog.Builder.html). There are a number of steps to use a builder to create a Dialog:
 
-1. Instantiate a new builder for this particular dialog. The constructor takes in a `Context` under which to create the Dialog. Note that once the builder is initialized, you can create and recreate the same dialog with a single method call&mdash;that's the benefit of using a factory.
+1. Instantiate a new builder for this particular dialog. The constructor takes in a `Context` under which to create the Dialog. Note that once the builder is initialized, you can create and recreate the same dialog with a single method call&mdash;that's the benefits of using a factory.
 
 2. Call "setter" methods on the builder in order to specify the title, message, etc. for the dialog that will appear. This can be hard-coded text or a reference to an XML String resource (as a user-facing String, the later is more appropriate for published applications). Each setter method will return a reference to the builder, making it easy to chain them.
 
@@ -23,6 +23,7 @@ We don't actually instantiate an `AlertDialog` directly (in fact, it's construct
 4. Finally, actually instantiate the `AlertDialog` with the `builder.create()` method, using the **`show()`** method to make the dialog appear on the screen!
 
 ```java
+//java
 AlertDialog.Builder builder = new AlertDialog.Builder(this);
 builder.setTitle("Alert!")
        .setMessage("Danger Will Robinson!");
@@ -35,6 +36,17 @@ builder.setPositiveButton("I see it!", new DialogInterface.OnClickListener() {
 AlertDialog dialog = builder.create();
 dialog.show();
 ```
+```kotlin
+//kotlin
+val builder = AlertDialog.Builder(this)
+builder.apply {
+	setTitle("Alert!")
+	setMessage("Danger Will Robinson!")
+	setPositiveButton("I see it!") { dialog, id -> 
+		Log.v(TAG, "You clicked okay! Good times :)") 
+	}
+}
+```
 
 <p class="alert alert-info">An important part of learning to develop Android applications is being able to read the API to discover effective options. For example, can you read the [AlertDialog.Builder API](https://developer.android.com/reference/android/support/v7/app/AlertDialog.Builder.html) and determine how to add a "cancel" button to the alert?</p>
 
@@ -46,20 +58,19 @@ The process described above will create and show a Dialog, but that dialog has a
 
 For example, if the device changes configurations (e.g., is rotated from portrait to landscape) then the Activity is destroyed and re-created (it's `onCreate()` method will be called again). But if this happens while a Dialog is being shown, then a `android.view.WindowLeaked` error will occur and the Dialog is lost!
 
-To avoid these problems, we need to have a way of giving that Dialog its own lifecycle which can interact with the the Activity's lifecycle... sort of like making it a _modular_ piece of an Activity...
+To avoid these problems, we need to have a way of giving that Dialog its own lifecycle which can interact with the the Activity's lifecycle... sort of like making it a _modular_ piece of an Activity... that's right, we need to make it a Fragment! Specifically, we will use a subclass of Fragment called [`DialogFragment`](http://developer.android.com/guide/topics/ui/dialogs.html#DialogFragment), which is a Fragment that displays as a modal dialog floating above the Activity (no extra work needed).
 
-That's right, we need to make it a Fragment! Specifically, we will use a subclass of Fragment called [`DialogFragment`](http://developer.android.com/guide/topics/ui/dialogs.html#DialogFragment), which is a Fragment that displays as a modal dialog floating above the Activity (no extra work needed).
-
-Just like with previous Fragment examples, we'll need to create our own subclass of `DialogFragment`. It's often easiest to make this a _nested class_ if the Dialog won't be doing a lot of work (e.g., shows a simple confirmation).
+Just like with the previous Fragment examples, we'll need to create our own subclass of `DialogFragment`. It's often easiest to make this a _nested class_ if the Dialog won't be doing a lot of work (e.g., shows a simple confirmation).
 
 Rather than specifying a Fragment layout through `onCreateView()`, we can instead override the `onCreateDialog()` callback to specify a `Dialog` object that will provide the view hierarchy for the Fragment. This Dialog can be created with the `AlertDialog.Builder` class as before!
 
 ```java
-public static class MyDialogFragment extends DialogFragment {
+//java
+public static class HelloDialogFragment extends DialogFragment {
 
-    public static MyDialogFragment newInstance() {
+    public static HelloDialogFragment newInstance() {
         Bundle args = new Bundle();
-        MyDialogFragment fragment = new MyDialogFragment();
+        HelloDialogFragment fragment = new HelloDialogFragment();
         fragment.setArguments(args);
         return fragment;
     }
@@ -72,14 +83,37 @@ public static class MyDialogFragment extends DialogFragment {
     }
 }
 ```
+```kotlin
+//kotlin
+class HelloDialogFragment : DialogFragment() {
+	companion object {
+		fun newInstance(): HelloDialogFragment {
+			val args = Bundle()
+			val fragment = HelloDialogFragment()
+			fragment.arguments = args
+			return fragment
+		}
+	}
+
+	override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+		return activity?.let { //confirm Activity isn't null
+			val builder = AlertDialog.Builder(it)
+			builder.apply {
+				//...
+			}
+			builder.create()
+		} ?: throw IllegalStateException("Activity cannot be null")
+	}
+}
+```
 
 Finally, we can actually show this `DialogFragment` by instantiating it (remember to use a `newInstance()` factory method!) and then calling the `show()` method on it to make it show as a Dialog. The `show()` method takes in a `FragmentManager` used to manage this transaction. By using a DialogFragment, it is possible to change the device configuration (rotate the phone) and the Dialog is retained.
 
-Here's the other neat trick: a `DialogFragment` is just a `Fragment`. That means we can use it _anywhere_ we normally used Fragments... including embedding them into layouts! For example if you made a "DetailsFragment" subclass `DialogFragment` instead of `Fragment`, it would be able to be used in the exact same as before. It's still a Fragment, just with extra features&mdash;one of which is a `show()` method that will show it as a Dialog!
+Here's the other neat trick: a `DialogFragment` is just a `Fragment`. That means we can use it _anywhere_ we normally used Fragments... including embedding them into layouts! For example if you made the `DetailsFragment` subclass `DialogFragment` instead of `Fragment`, it would be able to be used in the exact same as before. It's still a Fragment, just with extra features&mdash;one of which is a `show()` method that will show it as a Dialog!
 
-- Use `setStyle(DialogFragment.STYLE_NO_TITLE, android.R.style.Theme_Holo_Light_Dialog)` to make the Fragment look a little more like a dialog.
+  - Use `setStyle(DialogFragment.STYLE_NO_TITLE, android.R.style.Theme_Holo_Light_Dialog)` to make the Fragment look a little more like a dialog.
 
-<p class="alert alert-info">The truth is that Dialogs are not very commonly used in Android (compare to other GU systems). Apps are more likely to just dynamically change the Fragment or Activity being shown, rather than interrupt the user flow by creating a pop-up modal. And 80% of the Dialogs that _are_ used are AlertDialogs. Nevertheless, it is worth being familiar with this process and the patterns it draws upon!</p>
+<p class="alert alert-info">The truth is that Dialogs are not very commonly used in Android (compare to other UI systems). Apps are more likely to just dynamically change the Fragment or Activity being shown, rather than interrupt the user flow by creating a pop-up modal. And 80% of the Dialogs that _are_ used are AlertDialogs. Nevertheless, it is worth being familiar with this process and the patterns it draws upon!</p>
 
 
 ## Notifications
@@ -87,74 +121,80 @@ We can let the user know what is going on with the app by popping up a Toast or 
 
 Android's documentation for UI components is overall quite thorough and usable (after all, Google wants to make sure that developers can build effective apps, thereby making the platform worthwhile). And because there are so many different UI elements and they change all the time, in order to do real-world Android development you need to be able to read, synthesize, and apply this documentation. As such, this lecture will demonstrate how to utilize that documentation and apply it to create notifications. We will follow through the documentation to add a feature that when we click on the "notify" button, a notification will appear that reports how many times we've clicked that button.
 
-- To follow along this, open up the Notifications documentation at <https://developer.android.com/guide/topics/ui/notifiers/notifications.html>.
+- To follow along this, open up the Notifications documentation at <https://developer.android.com/training/notify-user/build-notification>.
 
-- Looking at the documentation we see an overview to start. There is also a link to the [Notification Design Guide](https://material.google.com/patterns/notifications.html), which is a good place to go to figure out how to design _effective_ notifications.
+- Looking at the documentation we see a link to the [Notifications Overview](https://developer.android.com/guide/topics/ui/notifiers/notifications) to start. That page also links to the [Notification Design Guide](https://material.io/design/platform-guidance/android-notifications.html#usage), which is a good place to go to figure out how to design _effective_ notifications.
 
-- There is a lot of text about how to make a Notification... I personally prefer to work off of sample code, modifying it until I have something that does what I want. So I suggest scrolling down **slowly** until you find an example you can copy/paste in, or at least reference. Then you can scroll back up later to get more detail about how that code works. The table of contents is also useful for this.
+- I personally prefer to work off of sample code, modifying it until I have something that does what I want. So I suggest scrolling down **slowly** until you find an example you can copy/paste in, or at least reference. Then you can scroll back up later to get more detail about how that code works. The table of contents is also useful for this.
 
-- Eventually you'll find a subsection ["Creating a Simple Notification"](https://developer.android.com/guide/topics/ui/notifiers/notifications.html#SimpleNotification), which sounds like a great place to start!
+    Eventually you'll find a subsection ["Create a basic notification"](https://developer.android.com/guide/topics/ui/notifiers/notifications.html#SimpleNotification), which sounds like a great place to start!
 
+The first part of creating this Notification is using `NotificationCompat.Builder` (use the `v4` support version; the `v7` is now deprecated). We saw this kind of Builder class with `AlertBuilder`, and the same concept applies here: it is a class used to construct the Notification for us. We call setters to specify the properties of the Notification.
 
-The first part of creating this Notification is using `NotificationCompat.Builder` (use the `v4` support version; the `v7` is now deprecated). We saw this kind of Builder class with `AlertBuilder`, and the same concept applies here: it is a class used to construct the Notification for us. We call setters to specify the properties of the Notification. Going through those settings:
+- Starting in API 26 (Oreo), we also are required to specify a [**notification channel**](https://developer.android.com/guide/topics/ui/notifiers/notifications.html#ManageChannels) (called a "notification category" in the user interface). These are used to help users manage notifications by grouping them together and allowing users to control the settings of that group&mdash;such as whether they are shown, what sounds they play, etc.
 
-- I don't have a drawable resource to use for an icon, which makes me want to not include the icon specification. However, scrolling back up will reveal that a notification icon is [required](https://developer.android.com/guide/topics/ui/notifiers/notifications.html#Required), so we will need to make one.
+    Notification channels are identified by a String ID that is unique within the package, so we'll usually define this as a constant. We can make a single channel for our whole app for now. We'll actually set up the channel later, but all notifications need to be associated with one.
+    
+    - Note that you need to do this if you target API 26 or later; otherwise the method signatures change a bit.
+
+- Going through those settings: I don't have a drawable resource to use for an icon, which makes me want to not include the icon specification. Looking up a bit you'll notice that notification icon is [required](https://developer.android.com/guide/topics/ui/notifiers/notifications.html#Required), so we will need to make one.
 
     We can produce an new Image Asset for the notification icon (`File > New > Image Asset`), just as we did previously with launcher icons and Material icons. Specify the "type" as `Notification`, give it an appropriate name, and pick a clipart of your choosing.
 
 - We set the "title" and the content for the notification.
 
-- Starting in API 26 (Oreo), we also are required to specify a [**notification channel**](https://developer.android.com/guide/topics/ui/notifiers/notifications.html#ManageChannels) (called a "notification category" in the user interface). These are used to help users manage notifications by grouping them together and allowing users to control the settings of that group&mdash;such as whether they are shown, what sounds they play, etc.
+- The "priority" is how important the notification is (e.g., whether it should interrupt the user or not). It's used for API 25 and lower; API 26 (Oreo) builds this into the Notification Channel's "importance" instead. But we set it here for backwards compatibility.
 
-    Notification channels are identified by a String ID that is unique within the package.
-    TODO....
+The next step is to actually construct the [Notification Channel](https://developer.android.com/training/notify-user/channels). While we've given it a name, we need to actually make the object to manage that channel's settings.
 
-The next line makes an Intent. We've done that too... but why create an Intent for a Notification? If we scroll up and look where `Intent` is referenced, we can find out about [Notification Actions](https://developer.android.com/guide/topics/ui/notifiers/notifications.html#Actions), which specify what happens when the user clicks on the Notification. Usually this opens the relevant application, and since `Intents` are messages to open Activities, it makes sense that clicking a Notification would send an `Intent`.
+- Note that the code to run channels is only available for API 26 (Oreo). Since they're not in the support library, we have to use an `if` statement to make sure we don't try to run the code on older devices! We do this by comparing against the `Build.VERSION.SDK_INT`:
 
-The example Notification is also using the a [`TaskStackBuilder`](https://developer.android.com/reference/android/support/v4/app/TaskStackBuilder.html) to [construct an "artificial" backstack](https://developer.android.com/guide/topics/ui/notifiers/notifications.html#NotificationResponse). This is used to specify, for example, that if the user clicks on the Notification and jumps to a "detail" view (say), they can still hit the back button to return to the "master" view, as if they had navigated to the "detail" view from a normal usage of the application.
+    ```kotlin
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        // Create the NotificationChannel
+    }
+    ```
 
-- We build this backstack not just with methods, but by integrating with the "parent-child" relationship we've otherwise set up between Activities (e.g., in the Manifest). In the Manifest, we had specified that `SecondActivity's` parent is `MainActivity`. This is what gave us the nice back button in the ActionBar. These sequence of `parentActivityName` attributes form a hierarchy that will be the "back navigation hierarchy." We add the "endpoint" of the hierarchy to the builder using `addParentStack(MyResultActivity.class)`, and then finally put the `Intent` we actually want to use "on top" of the stack with `addNextIntent(resultIntent)`.
+- The channel is instantiated as a new `NotificationChannel` object, and is passed an ID (so it knows what it's name is), a display label, and an _importance_.
 
-The `TaskStackBuilder` is then used to produce a [`PendingIntent`]((http://developer.android.com/reference/android/app/PendingIntent.html). What's a `PendingIntent`? The details are not _super_ readable... It's basically a wrapper around an `Intent` that we give to **another** class. Then when that class receives our `PendingIntent` and reacts to it, it can run the `Intent` (command) we sent with it as if that `Activity` were us (whew). The Intent is "pending" delivery/activation by another service.
+    For importance, `IMPORTANCE_HIGH` will cause it to pop up and make a sound. See [the documentation](https://developer.android.com/training/notify-user/channels#importance) for other options. Also check out the [design guide](https://material.io/design/platform-guidance/android-notifications.html#settings) for best practices on specifying Notification priority.
+    
+    - For earlier versions of Android, you set the `priority`. In order for a notification to visually intrude upon the user, its [priority](https://developer.android.com/guide/topics/ui/notifiers/notifications.html#Priority) must be high enough (it needs to be `NotificationCompat.PRIORITY_HIGH` or higher) **and** because it needs to use either sound _or_ vibration (it needs to be _really important_ to get a heads-up pop).
 
-- This is like when you ask a professor for a letter of recommendation, and you give them the stamped envelope (which you should always do!). When they get the packet, then can then send their letter using _your_ envelop and stamp!
+        You can make the Notification vibrate by using the <a href="http://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#setVibrate(long[])">`setVibrate()`</a> method, passing it an array of times (in milliseconds) at which to turn vibration on and off. The pattern is `[delay, vibrate, sleep, vibrate, sleep, ...]`
+        <!-- - Will need permission to produce a vibration: `<uses-permission android:name="android.permission.VIBRATE" />` -->
+        You can also assign a default sound with (e.g.) `builder.setSound(Settings.System.DEFAULT_NOTIFICATION_URI);`
 
-    - Alternatively: "I am mailing you my car keys, when you get them you should come pick me up".
+- We use the `NotificationManager` (_not_ the support library one!) to "register" the channel, so that notifications can be added to it.
 
-- The `TaskStackBuilder` produces a `PendingIntent` that "wraps" around the `Intent` we actually want to send when the notification is clicked. So when we select the notification, the Notification Drawer service can open up that `PendingIntent` packet, pull out the `Intent` we want to send, and then mail it off. And this Intent that the Notification Drawer sends is to wake up our Activity, and it is sent with _our_ permissions (rather than the Drawer's permissions), as if we had sent it ourselves!
+    ```kotlin
+    val notificationManager: NotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    notificationManager.createNotificationChannel(channel)
+    ```
 
-    While it is _possible_ to instantiate a PendingIntent directly, we instead get the PendingIntent by calling the `TaskStackBuilder#getPendingIntent()` method to build an appropriate object. Pass the method an _ID_ to refer to that request (like we've done when sending Intents for Results), and a flag `PendingIntent.FLAG_CURRENT_UPDATE` so that if we re-issue the PendingIntent it update the existing one instead of replacing it with a new pending action.
+Skipping ahead, we can actually _show_ the notification that we've created so far. We use the `NotificationManager` (similar to the `FragmentManager`, `SmsManager`, etc.) to fetch the _notification service_ (the "application" that handles all the notifications for the OS). We tell this manager to actually issue the built `Notification` object.
 
-    We can then assign that `PendingIntent` to the _Notification_ builder (with `setContentIntent()`).
-
-Finally, we can use the `NotificationManager` (similar to the `FragmentManager`, `SmsManager`, etc.) to fetch the _notification service_ (the "application" that handles all the notifications for the OS). We tell this manager to actually issue the built `Notification` object.
-
-- We also pass the `notify()` method an `ID` number to refer to the particular Notification (not to the PendingIntent this time, but the Notification itself). Again, this will allow us to refer to and update that Notification later (as opposed to updating the PendingIntent for the Notification later).
-
-This allows us to have working Notifications! We can click the button to launch a Notification, and then click on the Notification to be taken to our app, which has a working back stack!
-
-
-We can also **update** this notification later, and it's really straightforward: we simply re-issue a Notification with the same **`ID`** number, and it will "replace" the previous one!
+- We also pass the `notify()` method an `ID` number to refer to the particular Notification. This will allow us to refer to and update that Notification later. We can  **update** this notification later by just issuing a Notification with the same **`ID`** number, and it will "replace" the previous one!
 
 - For example, we can have our text be based on some instance variable, and have the Notification track the number of clicks!
 
 
-You may notice that this notification doesn't ["pop up"](https://developer.android.com/guide/topics/ui/notifiers/notifications.html#Heads-up) in a way you might expect. In order for a notification to visually intrude upon the user, its [priority](https://developer.android.com/guide/topics/ui/notifiers/notifications.html#Priority) must be high enough (it needs to be `NotificationCompat.PRIORITY_HIGH` or higher) **and** because it needs to use either sound _or_ vibration (it needs to be _really important_ to get a heads-up pop).
+### Tap Actions
+We've managed to show notifications, but we also want them to _do_ something, such as when you click on it&mdash;specifying the [Notification Action](https://developer.android.com/guide/topics/ui/notifiers/notifications#Actions). At the very least, clicking on the notification should open up the relevant application. And since `Intents` are messages to open Activities, it makes sense that clicking a Notification would send an `Intent`. Moreover, remember that notifications exist outside of the app that creates them; so we need to use Intents to send messages (we can't just specify a callback function).
 
-- We can make the Notification vibrate by using the <a href="http://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#setVibrate(long[])">`setVibrate()`</a> method, passing it an array of times (in milliseconds) at which to turn vibration on and off.
-  - Pattern is `[delay, vibrate, sleep, vibrate, sleep, ...]`
-  <!-- - Will need permission to produce a vibration: `<uses-permission android:name="android.permission.VIBRATE" />` -->
-- We can also assign a default sound with (e.g.) `builder.setSound(Settings.System.DEFAULT_NOTIFICATION_URI);`
-- See the [design guide](http://developer.android.com/design/patterns/notifications.html#correctly_set_and_manage_notification_priority) for best practices on specifying Notification priority.
+But beyond just making the `Intent` to send, we're actually going to create what is called a [`PendingIntent`](http://developer.android.com/reference/android/app/PendingIntent.html). The details are not _super_ readable, but it's basically a wrapper around an `Intent` that we give to **another** class. Then when that other component wants to send the `Intent`, it can "unwrap" it from the `PendingIntent` and run the command as if it were us (in terms of the "source", permissions, etc). The Intent is one that we sent, but is "pending" delivery/activation by another service. So when we select the notification, the Notification Drawer service can open up that `PendingIntent` packet, pull out the `Intent` we want to send, and then mail it off. And this Intent that the Notification Drawer sends is to wake up our Activity, and it is sent with _our_ permissions (rather than the Drawer's permissions), as if we had sent it ourselves!
 
-- As of API 26 (Oreo), the concept of "priority" has been deprecated in favor of "importance". Importance is specified on a per-channel basis. See [Creating a Notification Channel](https://developer.android.com/guide/topics/ui/notifiers/notifications.html#CreateChannel).
+- This is like when you ask a professor for a letter of recommendation, and you give them the stamped envelope (which you should always do!). When they get the packet, then can then send their letter using _your_ envelop and stamp!
 
-    (Note that you can use an `if` statement to check which API version the phone is running to determine which code to run!)
+- We create a `PendingIntent` using the `PendingIntent.getActivity()` method&mdash;this takes in a Context, an ID code (similar to the request codes we use when sending Intents for Results; this allows us to know which `PendingIntent` a command came from), the `Intent` to be launched, and a flag `PendingIntent.FLAG_CURRENT_UPDATE` so that if we re-issue the PendingIntent it update the existing one instead of replacing it with a new pending action (e.g., for if we update our notification's action).
 
-As always, there are a number of other pieces/details we can specify, but I leave those to you to look up in the documentation.
+- Note that you can create an "artificial backstack" (e.g., if the Notification is supposed to drop the user into the middle of your app's workflow) by using the [`TaskStackBuilder`](https://developer.android.com/training/notify-user/navigation#build_a_pendingintent_with_a_back_stack) class. This builder will let you specify a "history" of intents, and use that to produce the proper `PendingIntent`.
 
+- Be sure and tell the `NotificationCompat.Builder` about the _content intent_ we just defined!
 
-<p class="alert alert-info">As the course focuses on development, this lecture references but does **not** discuss the UI Design guidelines. For example: what kind of text should you put in your Notification? _When_ should you choose to use a notification? Android has lots of guidance on these questions in their [design documentation](https://material.io/guidelines/patterns/notifications.html). Major HCI and Mobile Design guidelines apply here as well (e.g., make actions obvious, give feedback, avoid irreversible actions, etc.).</p>
+Now we can click on the Notification and have it do something! Note that, as always, there are a number of other pieces/details/features we can specify, but I leave those to you to look up in the documentation.
+
+<p class="alert alert-info">As the course focuses on development, this lecture references but does **not** discuss the UI Design guidelines. For example: what kind of text should you put in your Notification? _When_ should you choose to use a notification? Android has lots of guidance on these questions in their [design documentation](https://material.io/design/platform-guidance/android-notifications.html). Major HCI and Mobile Design guidelines apply here as well (e.g., make actions obvious, give feedback, avoid irreversible actions, etc.).</p>
 
 
 ## Settings
@@ -178,6 +218,7 @@ We can edit this XML file by calling `.edit()` on the `SharedPreferences` object
 Finally, we can just call `get()` methods on the `SharedPreferences` object in order to fetch data out of it! The second parameter of these methods is a default value for if a preference doesn't exist yet, making it easy to avoid `null` errors.
 
 **For practice**, try saving the notification count in the Activity's `onStop()` function, and retrieving it in `onCreate()`. This will allow you to persist the count even when the Activity is destroyed.
+
 
 ### Preference Settings {-}
 While a SharedPreferences file acts a generic data store, it is called Shared _Preferences_ because it's most commonly used for "user preferences"&mdash;e.g., the "Settings" for an app.
@@ -219,7 +260,7 @@ Once we have the Preferences all defined in XML, we just need to show them in ou
 
     - Note that the container for our Fragment is `android.R.id.content`. This refers to the "root element" of the current View&mdash;basically what `setContentView()` is normally inflating into.
 
-- There is a `PreferenceActivity` class as well, but the official recommendation is **do not use it**. Many of its methods are deprecated, and since we're using Fragments via the support library, we should stick with the Fragment process.
+- There is a `PreferenceActivity` class as well, but the official recommendation is: **do not use it**. Many of its methods are deprecated, and since we're using Fragments via the support library, we should stick with the Fragment process.
 
 Finally, how do we interact with these settings? Here's the trick: a `preferences` XML resource is **automatically** associated with a `SharedPreferences` file! And in fact, every time we adjust a setting in the `PreferenceFragment`, the values in that file are edited as well! In effect, the `PreferenceFragment` _automatically_ edits the SharedPreferences based on the user interaction. We never need to write to the file ourselves, just read from it (and we read from it in the exact same way we read any other SharedPreferences file, as described above).
 
