@@ -33,12 +33,19 @@ The difference between saving files to Internal and External storage, ___in prac
 Because a device's External storage may be on removable media, in order to interact with it in any way we first need to check whether it is available (e.g., that the SD card is mounted). This can be done with the following [check](https://developer.android.com/guide/topics/data/data-storage.html#MediaAvail) (written as a helper method so it can be reused):
 
 ```java
+//java
 public static boolean isExternalStorageWritable() {
   String state = Environment.getExternalStorageState();
   if (Environment.MEDIA_MOUNTED.equals(state)) {
     return true;
   }
   return false;
+}
+```
+```kotlin
+//kotlin
+fun isExternalStorageWritable(): Boolean {
+    return Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
 }
 ```
 
@@ -73,7 +80,12 @@ First we _still_ need to request permission in the `Manifest`; if we haven't ann
 Before we perform a dangerous action, we can check that we currently have permission:
 
 ```java
+//java
 int permissionCheck = ContextCompat.checkSelfPermission(activity, Manifest.permission.PERMISSION_NAME);
+```
+```kotlin
+//kotlin
+val permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.PERMISSION_NAME)
 ```
 
 - This function basically "looks up" whether the app has _currently_ been granted a particular permission or not. It will return either `PackageManager.PERMISSION_GRANTED` or `PackageManager.PERMISSION_DENIED`.
@@ -81,7 +93,12 @@ int permissionCheck = ContextCompat.checkSelfPermission(activity, Manifest.permi
 If permission has been granted, great! We can go about our business (e.g., saving a file to external storage). But if permission has NOT been explicitly granted (at runtime), then we have to ask for it. We do this by calling:
 
 ```java
+//java
 ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.PERMISSION_NAME}, REQUEST_CODE);
+```
+```kotlin
+//kotlin
+ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.PERMISSION_NAME), REQUEST_CODE)
 ```
 
 - This method takes a Context and an _array_ of permissions that we need access to (in case we need more than one). We also provide a request ID code (an `int`), which we can use to identify that particular request for permission in a callback that will be executed when the user chooses whether to give us access or not. This is the same pattern as when we sent an Intent for a _result_; asking for permission is conceptually like sending an Intent to the permission system!
@@ -89,6 +106,7 @@ ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.PER
 We can then provide the callback that will be executed when the user decides whether to grant us permission or not:
 
 ```java
+//java
 public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
   switch (requestCode) {
     case REQUEST_CODE:
@@ -98,6 +116,19 @@ public void onRequestPermissionsResult(int requestCode, String permissions[], in
     default:
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
   }
+}
+```
+```kotlin
+//kotlin
+override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+    when (requestCode) {
+        REQUEST_CODE -> {
+            if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                //have permission! Do stuff!
+            }
+        }
+        else -> super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
 }
 ```
 
@@ -121,7 +152,7 @@ Once we have permission to write to an external file, we can actually do so! Sin
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="18" />
     ```
 
-<p class="alert alert-info">We can actually look at the emulator's file-system and see our files be created using `adb`. Connect to the emulator from the terminal using `adb -s emulator-5554 shell` (note: `adb` needs to be on your PATH). **Public** external files can usually be found in `/storage/sdcard/Folder`, while **private** external files can be found in `/storage/sdcard/Android/data/package.name/files` (these paths may vary on different devices).</p>
+<p class="alert alert-info">We can actually look at the emulator's file-system and see our files be created using `adb`. Connect to the emulator from the terminal using `adb -s emulator-5554 shell` (note: `adb` needs to be on your PATH). **Public** external files can usually be found in `/storage/emulated/0/Folder` (or `/storage/sdcard/Folder`), while **private** external files can be found in `/storage/emulated/0/Android/data/package.name/files` (these paths may vary on different devices).</p>
 
 Once we've opened up the file, we can write content to it by using the same IO classes we've used in Java:
 
@@ -132,6 +163,7 @@ Once we've opened up the file, we can write content to it by using the same IO c
 - In either case, **remember to `.close()` the stream when done** (to avoid memory leaks)!
 
 ```java
+//java
 //writing
 try {
     //saving in public Documents directory
@@ -168,6 +200,45 @@ try {
     Log.d(TAG, Log.getStackTraceString(ioe));
 }
 ```
+```kotlin
+//kotlin
+//writing
+try {
+    val dir = getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+    if (!dir.exists()) { dir.mkdirs() } //make dir if doesn't otherwise exist (pre-19)
+    val file = File(dir, FILE_NAME)
+    Log.v(TAG, "Saving to  " + file.absolutePath)
+
+    val out = PrintWriter(FileWriter(file, true))
+    out.println(textEntry.text.toString())
+    out.close()
+} catch (ioe: IOException) {
+    Log.d(TAG, Log.getStackTraceString(ioe))
+}
+
+//reading
+try {
+    val dir = getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+    val file = File(dir, FILE_NAME)
+    if (!file.exists()) return //e.g., if file doesn't exist yet
+    val reader = BufferedReader(FileReader(file))
+    val text = StringBuilder()
+
+    //read the file
+    var line: String? = reader.readLine()
+    while (line != null) {
+        text.append(line + "\n")
+        line = reader.readLine()
+    }
+
+    textDisplay.text = text.toString()
+    reader.close()
+
+} catch (ioe: IOException) {
+    Log.d(TAG, Log.getStackTraceString(ioe))
+}
+```
+
 
 This will allow us to have our "save" button write the message to the file, and have our "read" button load the message from the file (and display it on the screen)!
 
@@ -211,6 +282,7 @@ To do this, we're actually going to modify the `Intent` we _send_ so it includes
 Before we send the `Intent`, we're going to go ahead and create an (empty) file:
 
 ```java
+//java
 File file = null;
 try {
     String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()); //include timestamp
@@ -225,63 +297,31 @@ try {
     Log.d(TAG, Log.getStackTraceString(ioe));
 }
 ```
+```kotlin
+//kotlin
+var file: File? = try {
+    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date()) //include timestamp
+    val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
 
-We will then specify an additional Extra to give that file's location to the camera: if we use `MediaStore.EXTRA_OUTPUT` as our Extra's _key_, the camera will know what to do with that! However, the extra won't actually be the `File` but a **Uri** (recall: the "url" or location of a file). We're not sending the file itself, but the ___location___ of that file (because it's smaller data to fit in the Intent envelope).
-
-- We can get this Uri with the `Uri.fromFile(File)` method:
-
-    ```java
-    //save as instance variable to access later when picture comes back
-    this.pictureFileUri = Uri.fromFile(file);
-    ```
-
-- Then when we get the picture result back from the Camera (in our `onActivityResult` callback), we can access that file at the saved Uri and use it to display the image! The `ImageView.setImageUri()` is a fast way of showing an image file.
-
-<p class="alert alert-info">Note that when working with images, we can very quickly run out of memory (because images can be huge). So we'll often want to ["scale down"](https://developer.android.com/topic/performance/graphics/index.html) the images as we load them into memory. Additionally, image processing can take a while so we'd like to do it off the main thread (e.g., in an `AsyncTask`). This can become complicated; the recommended solution is to use a third-party library such as [Glide](https://github.com/bumptech/glide), [Picasso](http://square.github.io/picasso/), or [Fresco](http://frescolib.org/).</p>
-
-
-## Sharing Files
-Once we have a file storing the image, we can also share that image with other apps!
-
-As always, in order to interact with other apps, we use an Intent. We can craft an _implicit intent_ for `ACTION_SEND`, sending a message to any apps that are able to send (share) pictures. We'll set the data type as `image/*` to mark this as an image. We will also attach the file as an extra (specifically an `EXTRA_STREAM`). Again note that we don't actually put the _file_ in the extra, but rather the **Uri** for the file!
-
-```java
-Intent intent = new Intent(Intent.ACTION_SEND);
-intent.setType("image/*");
-intent.putExtra(Intent.EXTRA_STREAM, this.pictureFileUri);
-
-if (intent.resolveActivity(getPackageManager()) != null) {
-    startActivity(intent);
+    val file = File(dir, "PIC_$timestamp.jpg")
+    file.createNewFile() //actually make the file!
+    file //return
+} catch (ioe: IOException) {
+    Log.d(TAG, Log.getStackTraceString(ioe))
+    null //return
 }
 ```
 
-There is one complication though: because we're saving files in External storage, the app who is executing the `ACTION_SEND` will need to have permission to read the file (e.g., to access External storage). The Messenger app on the emulator appears to lack this permission by default, so we need to take a slightly different approach:
+- Since we're creating a file in external storage, make sure you ask for permission first!!
 
-Rather than putting the `file://` Uri in the Intent's extra, we'll need to create a `content://` Uri for a _ContentProvider_ who is able to provide files to anyone who requests them regardless of permissions (the provider grants permission to access its content). Luckily, each image stored in the public directories is automatically tracked by a ContentProvider known as the [`MediaStore`](https://developer.android.com/reference/android/provider/MediaStore.html). It easy to fetch a `content://` Uri for a particular image file from this provider:
+### FileProviders
+We will then specify an additional Extra to give that file's location to the camera: if we use `MediaStore.EXTRA_OUTPUT` as our Extra's _key_, the camera will know what to do with that! However, the extra won't actually be the `File` but a **Uri** (recall: the "url" or location of a file). We're not sending the file itself, but the ___location___ of that file (because it's smaller data to fit in the Intent envelope).
 
-```java
-MediaScannerConnection.scanFile(this, new String[] { file.toString(); }, null,
-        new MediaScannerConnection.OnScanCompletedListener() {
-            public void onScanCompleted(String path, Uri uri) {
-                mediaStoreUri = uri;  //save the content:// Uri for later
-                Log.v(TAG, "MediaStore Uri: "+uri);
-            }
-        });
-```
+Here's the tricky part: if we try and share the absolute path to the file as a Uri, we'll get an error because we're "leaking" information&mdash;that is, we're trying to let another app access a file that they may not have permission to read! We need to make sure that the Camera actually has access to where the file happens to live (it does because the file is is in public storage, but Android doesn't know that&mdash;it just sees that you're sharing an absolute path). 
 
-The `scanFile()` method provides a Uri that can be given to the Intent, and that the Messenger app will be able to access! We can generate this Uri as soon as we have a file for the image to be saved in.
-
-### Bonus: Sharing with a FileProvider {-}
-
-<p class="alert alert-warning">This section may be out of date and needs further testing for accuracy.</p>
-
-What happens if we try and share an Internal file? You'll get an error (at the user level!), because the other app (Messenger) doesn't have permission to read that file!
-
-There is a way around this though, and it's by using a `ContentProvider` again (haha!). A `ContentProvider` explicitly is about making content available outside of a package (that's why we declare them in the `Manifest`). Specifically, a `ContentProvider` can convert a set of `Files` into a set of data contents (e.g., accessible with the `content://` protocol) that can be used and returned and understood by other apps!
+Rather than putting the `file://` Uri in the Intent's extra, we'll need to create a `content://` Uri for a _ContentProvider_ who is able to provide files to anyone who requests them regardless of permissions (the provider grants permission to access its content). A `ContentProvider` explicitly is about making content available outside of a package. Specifically, a specialized `ContentProvider` called a [`FileProvider`](https://developer.android.com/reference/android/support/v4/content/FileProvider) can convert a set of `Files` into a set of data contents (e.g., accessible with the `content://` protocol) that can be used and returned and understood by other apps!
 
 - It's kind of like a "File Server" in that respect!
-
-This is what the `MediaStore` provider is doing for us with images. The question is: how do we do this for generic file types? Luckily, Android includes a [`FileProvider`](https://developer.android.com/reference/android/support/v4/content/FileProvider.html) class in the support library that does exactly this work.
 
 Setting up a `FileProvider` is luckily not too complex, though it has a couple of steps. You will need to declare the `<provider>` inside the Manifest (see the [guide link](https://developer.android.com/training/secure-file-sharing/setup-sharing.html) for an example).
 
@@ -293,7 +333,7 @@ Setting up a `FileProvider` is luckily not too complex, though it has a couple o
     android:grantUriPermissions="true">
     <meta-data
         android:name="android.support.FILE_PROVIDER_PATHS"
-        android:resource="@xml/fileprovider" />
+        android:resource="@xml/filepaths" />
 </provider>
 ```
 
@@ -301,16 +341,22 @@ The attributes you will need to specify are:
 
 - `android:authority` should be your package name followed by `.fileprovider` (e.g., `edu.uw.myapp.fileprovider`). This says what source/domain is granting permission for others to use the file.
 
-- The child `<meta-data>` tag includes an `androd:resource` attribute that should point to an XML resource, of type `xml` (the same as used for your SharedPreferences). _You will need to create this file!_ The contents of this file will be a list of what _subdirectories_ you want the `FileProvider` to be able to provide. It will look something like:
+- The child `<meta-data>` tag includes an `android:resource` attribute that should point to an XML resource, of type `xml` (the same as used for your SharedPreferences). _You will need to create this file!_ The contents of this file will be a list of what _subdirectories_ you want the `FileProvider` to be able to provide. It will look something like:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <files-path name="my_file" path="files/" />
+    <!--shared from internal storage -->
+    <files-path path="images/" name="myfiles" />
+
+    <!--shared external storage -->
+    <external-path path="Documents/" name="documents" />
+    <external-path path="Pictures/" name="pictures" />
+
 </paths>
 ```
 
-The `<files-path>` entry refers to a subdirectory inside the Internal Storage files (the same place that `.getFilesDir()` points to), with the `path` specifying the name of the subdirectory.
+The `<files-path>` entry refers to a subdirectory for Internal Storage files (the same place that `.getFilesDir()` points to), and `<external-path>` to refer to the subdirectory for External Storage files. The `path` attributes specifies the name of the subdirectory inside that storage location, and `name` is the name that the FileProvider will specify the path as (think: a public facing path). 
 
 Once you have the provider specified, you can use it to get a `Uri` to the "shared" version of the file using:
 
@@ -318,4 +364,37 @@ Once you have the provider specified, you can use it to get a `Uri` to the "shar
 Uri fileUri = FileProvider.getUriForFile(context, "edu.uw.myapp.fileprovider", fileToShare);
 ```
 
-(note that the second parameter is the "authority" you specified in your `<provider>` in the Manifest). You can then use this `Uri` as the `EXTRA_STREAM` extra in the Intent that you want to share!
+(note that the second parameter is the "authority" you specified in your `<provider>` in the Manifest). You can then use this `Uri` as the `MediaStore.EXTRA_OUTPUT` extra to tell the Camera where to save the picture it takes!
+
+- You can also use it as an `EXTRA_STREAM` extra in the Intent for more general file sharing.
+
+- Then when we get the picture result back from the Camera (in our `onActivityResult` callback), we can access that file at the saved Uri and use it to display the image! The `ImageView.setImageUri()` is a fast way of showing an image file.
+
+    You can also use an Intent to make sure a photo is [added to the phone's Gallery](https://developer.android.com/training/camera/photobasics#TaskGallery).
+
+<p class="alert alert-info">Note that when working with images, we can very quickly run out of memory (because images can be huge). So we'll often want to ["scale down"](https://developer.android.com/topic/performance/graphics/index.html) the images as we load them into memory. Additionally, image processing can take a while so we'd like to do it off the main thread (e.g., in an `AsyncTask`). This can become complicated; the recommended solution is to use a third-party library such as [Glide](https://github.com/bumptech/glide), [Picasso](http://square.github.io/picasso/), or [Fresco](http://frescolib.org/).</p>
+
+
+## Sharing Files
+Once we have a file storing the image, we can also share that image with other apps!
+
+As always, in order to interact with other apps, we use an Intent. We can craft an _implicit intent_ for `ACTION_SEND`, sending a message to any apps that are able to send (share) pictures. We'll set the data type as `image/*` to mark this as an image. We will also attach the file as an extra (specifically an `EXTRA_STREAM`). Again note that we don't actually put the _file_ in the extra, but rather the **Uri** for the file&mdash;the one provided by the `FileProvider`!
+
+```java
+//java
+Intent intent = new Intent(Intent.ACTION_SEND);
+intent.setType("image/*");
+intent.putExtra(Intent.EXTRA_STREAM, this.pictureFileUri);
+
+if (intent.resolveActivity(getPackageManager()) != null) {
+    startActivity(intent);
+}
+```
+
+If you're sharing a file that is normally private (e.g., from Internal Storage or private External Storage), you'll also need to make sure to that the "target" Activity has permission to read the file. You can grant this by adding a "flag" to the intent:
+
+```kotlin
+intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+```
+
+And with that, you should be able to take a picture, save it publicly (or privately), but still share it with the world!
