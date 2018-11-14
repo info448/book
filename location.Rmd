@@ -83,11 +83,12 @@ In order to effectively access location, we first need to make sure we include t
 
 There are a few steps to including the Play Services library:
 
-1. Modify the ___project-level___ `build.gradle` file to include a reference to [Google's Maven Repository](https://developer.android.com/studio/build/dependencies.html#google-maven)
+1. Confirm that the ___project-level___ `build.gradle` file to include a reference to [Google's Maven Repository](https://developer.android.com/studio/build/dependencies.html#google-maven):
 
     ```
     allprojects {
         repositories {
+            google()
             jcenter()
             // If you're using a version of Gradle lower than 4.1, you must instead use:
             maven {
@@ -104,88 +105,94 @@ There are a few steps to including the Play Services library:
 3. Modify your `build.gradle` file so that you can get access to the Location classes. In the ___module-level___ `build.gradle` file, under `dependencies` add
 
     ```
-    compile 'com.google.android.gms:play-services-location:11.4.2'
+    implementation 'com.google.android.gms:play-services-location:16.0.0'
     ```
 
-    This will load in the location services (but not the other play services, which take up extra space and may require additional API keys). Note that you can specify a different version of the services, as long as it is greater than `8.3.0`.
+    This will load in the location services (but not the other play services, which take up extra space and may require additional API keys). Note that you can specify a different version of the services, as long as it is greater than `11.6.0`.
 
 Additionally, you'll need to request permission to access the device's location. There are two permission levels we can ask for: `ACCESS_COARSE_LOCATION` (for GSM/WiFi level precision), and `ACCESS_FINE_LOCATION` (for GPS level precision). We'll use the later because we want GPS-level precision.
 
-<p class="alert alert-warning">This is a **dangerous** permission, so in Marshmallow we need to make sure to ask for permission at run-time! See the [lecture on permissions](#permissions) for details.</p>
+<p class="alert alert-warning">This is a **dangerous** permission, so we need to make sure to ask for permission at run-time! See the [lecture on permissions](#permissions) for details.</p>
 
 We're going to use Google Play Services to access the device's location. The Google APIs provide a nice set of methods for [accessing location](https://developer.android.com/training/location/retrieve-current.html) (without us needing to specify the source of that localization, GPS or GSM), and is the recommended API to use.
 
 - There is a built-in `android.location` API (e.g., for non-Google based Android devices), but it's not recommended practice and is harder to use.
 
-The first thing we need to do is get access to the API; we do this with a [`GoogleApiClient`](https://developers.google.com/android/reference/com/google/android/gms/common/api/GoogleApiClient) object. We construct this object in the Activity's `onCreate()` callback, using a `GoogleApiClient.Builder`:
-
-```java
-if (mGoogleApiClient == null) {
-    mGoogleApiClient = new GoogleApiClient.Builder(this)
-            .addConnectionCallbacks(this)
-            .addOnConnectionFailedListener(this)
-            .addApi(LocationServices.API)
-            .build();
-}
-```
-
-This builder requires us to specify what are called the _Connection Callbacks_: callbacks that will occur when we connect to the Google Play Services (a _Service_ or separate application managing all of Google's API work). We do this by implementing the `GoogleApiClient.ConnectionCallbacks` and `GoogleApiClient.OnConnectionFailedListener` interfaces. Each require methods that we must fill in; in particular, the `onConnected()` method is where we can "start" our API usage (like asking for location!)
-
-- `onSuspended` and `onFailed` are for when the connection is stopped (similar to `onStop()`) or if we fail to connect. See [Accessing Google APIs](https://developers.google.com/android/guides/api-client) for details.
-
-Note we also specify that we want to access the `LocationServices` API in the builder.
-
-Finally, we need to actually connect to the client. We do this in the Activity's `onStart()` method (and disconnect in `onStop()`):
-
-```java
-protected void onStart() {
-    mGoogleApiClient.connect();
-    super.onStart();
-}
-```
-
-This of course, will lead to our `onConnected()` callback being executed once the connection to the service is established.
-
 ### Accessing Location {-}
-Once we have the the client connected to the service, we can start getting the location!
-
-To access the location, we're going to use a class called the [FusedLocationApi](https://developers.google.com/android/reference/com/google/android/gms/location/FusedLocationProviderApi)^[https://developers.google.com/android/reference/com/google/android/gms/location/FusedLocationProviderApi]. This is a "unified" interface for accessing location. It fuses together all of the different ways of getting location, providing whichever one best suits our specified needs. You can think of it as a "wrapper" around more detailed location services.
+Google provides location access through a [`FusedLocationProviderClient`](https://developers.google.com/android/reference/com/google/android/gms/location/FusedLocationProviderClient). This is a "unified" interface for accessing location. It fuses together all of the different ways of getting location, providing whichever one best suits our specified needs. You can think of it as a "wrapper" around more detailed location services.
 
 - It will let us specify at a high level whether we want to trade accuracy for power consumption, rather than us needing to be explicit about that. And it will make decisions about what how best to fetch location given our stated needs and other contextual information.
 
-<p class="alert alert-warning">This particular method for accessing the `FusedLocationApi` has been deprecated in preparation for Google Play Services v12 (which will be released in early 2018). See [`FusedLocationProviderClient`](https://developers.google.com/android/reference/com/google/android/gms/location/FusedLocationProviderClient) for the updated API.</p>
+- You can get access to the (singleton) client by calling a method on the `LocationServices` class:
+
+    ```kotlin
+    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+    ```
 
 We're going to specify this "high level" requirement using a [`LocationRequest`](https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest)^[https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest] object, which represents the details of our request (e.g., how we want to have our phone search for it's location).
 
 ```java
+//java
 LocationRequest request = new LocationRequest();
 request.setInterval(10000);
 request.setFastestInterval(5000);
 request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 ```
+```kotlin
+//kotlin
+val locationRequest = LocationRequest().apply {
+    interval = 10000
+    fastestInterval = 5000
+    priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+}
+```
 
-- We create the object, then specify the "interval" that we want to check for updates. We can also specify the "fastest" interval, which is the maximum rate we want updates (assuming they are available). It's a bit like a minimum and maximum. 5 to 10 seconds is good for real-time navigation.
+- We create the object, then specify the "interval" that we want to check for updates. We can also specify the "fastest" interval, which is the maximum rate we want updates (assuming they are available). It's a bit like a minimum and maximum. 5 to 10 seconds is good for real-time navigation. See [Set up a location request](https://developer.android.com/training/location/change-location-settings#location-request) for more details.
+
+    It is alternatively possible to only access the [current location](https://developer.android.com/training/location/retrieve-current), if you don't need regularly updates
 
 - We also specify the [priority](https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest#constant-summary), which is the indicator to the FusedLocationApi about what kind of precision we want. `HIGH_ACCURACY` basically means GPS (trade power for accuracy!)
 
-<p class="alert alert-warning">Before actually sending the request, check for run-time permissions! This will introduce _another_ layout of callbacks: first you wait for the GoogleApiClient to connect in one callback, then you wait for permission to be granted in another! Remember to implement `onRequestPermissionResult`</p>
+We will also need to specify a [`LocationCallback`](https://developers.google.com/android/reference/com/google/android/gms/location/LocationCallback) object, which represents the "callback function" that will be executed when each location update is received. This is usually defined as an _anonymous object_:
 
-Once we have this request in place, we can send it off through the `FusedLocationApi`.
-
-```java
-LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, request, this);
+```kotlin
+//kotlin
+locationCallback = object : LocationCallback() {
+    override fun onLocationResult(locationResult: LocationResult?) {
+        if(locationResult != null) {
+            //do something with result!
+        } 
+    }
+}
 ```
 
-- The first parameter is going to be the `GoogleApiClient` object, and the second will be the request we just made. The third parameter for the `requestLocationUpdates()` method is a `LocationListener`&mdash;an object with a callback that can be executed when the location is updated (i.e., when we move). To provide this listener, we'll make the _Activity_ into one by implementing the interface and filling in the `onLocationChanged()` method.
+The `onLocationResult()` callback will be passed an object that is a ["batch collection"](https://developer.android.com/guide/topics/location/battery#batch) of location updates (which can be useful to preserve battery); access the `location` property to get a _list_ of `Location` objects. Each `Location` contains the latitude/longitude of the location. We can then use that location (such as display it). We can access the latitude and longitude with getters:
 
-    - Yes, this is a _third_ asynchronous callback after the GoogleApiClient connection has been established and permission has been granted _and_ a location has been received!
+    ```java
+    //java
+    textLat.setText("" + location.getLatitude());
+    textLng.setText("" + location.getLongitude());
+    ```
 
-    - This listener's callback will be handed a `Location` object, which contains the latitude/longitude of the location. We can then use that location (such as display it). We can access the latitude and longitude with getters:
+Finally, you can actually send the request for location updates using the `FusedLocationProviderClient`:
 
-        ```java
-        textLat.setText("" + location.getLatitude());
-        textLng.setText("" + location.getLongitude());
-        ```
+```kotlin
+fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
+```
+
+(The third parameter is a [`Looper`](https://developer.android.com/reference/android/os/Looper)), which is used to perform asynchronous operations in a background thread.
+
+<p class="alert alert-warning">Before actually sending the request, check for run-time permissions! Remember to implement `onRequestPermissionResult`</p>
+
+**Importantly**, in order to preserve battery life, you'll want to make sure to _stop_ requesting location updates when the app isn't in use, such as when it is paused or stopped:
+
+```kotlin
+//kotlin
+override fun onStop() {
+    super.onStop()
+    fusedLocationClient.removeLocationUpdates(locationCallback) //stop the updates that go to this callback
+}
+```
 
 It is possible to test this out (even when indoors) by using the emulator. Although the emulator doesn't actually have a GPS receiver, it is possible to give it a "fake" location using the emulator's options sidebar (where we previously sent SMS messages from). This allows us to "send" the phone a location, almost as if we as humans were the GPS receiver!
 
@@ -196,12 +203,4 @@ It is possible to test this out (even when indoors) by using the emulator. Altho
 - The `FusedLocationApi` class also has a `setMockLocation()` method, which can allow you to programmatically define locations (e.g., you can make a button that changes your location). This can be useful for testing and debugging.
 
 
-To review the process:
-
-- We start by creating and connecting to a `GoogleApiClient`, which is going to let us talk to the Play Services application running in the background of our phone.
-- This may not be able to connect (or may take a moment), so we have a _asynchronous_ callback for when it does.
-- Once it connects (in that callback), we check to make sure we have permission to get location, asking for it if we don't. This requires the user to make a decision, which may take some time, so we have _another_ asynchronous callback for when we finally get permission.
-- Once we have permission, we start up a repeated request for location updates. These updates may take some time to arrive, so we have _yet another_ asynchronous callback for when they do!
-- And when we get a location update, we finally update our View.
-
-That's pretty much what is involved in working with location. Lots of pieces (because callbacks all over the place!), but this does the work of tracking location.
+<p class="alert alert-info">The `FusedLocationProviderApi` was added in Google Play Services v12, and simplifies the process of getting location _a lot_!</p>
