@@ -21,6 +21,7 @@ The most common use of Services is to regularly perform a background task in a w
 For example, if you call two methods one after the other, then the second method execute will "wait" for the first one to finished:
 
 ```java
+//java
 public void countUp() {
     for(int i=0; i<1000; i++){
         System.out.println(i);
@@ -131,12 +132,24 @@ We create an IntentService by defining a new class (e.g., `CountingService`) tha
     For example, we can have the Service (when started) log out a count, pausing for a few seconds between. This will represent "expensive" logic to perform, a la accessing a network or a database.
 
     ```java
+    //java
     for(int count=0; count<=10; count++){
         Log.v(TAG, "Count: "+count);
         try {
             Thread.sleep(2000); //sleep for 2 seconds
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+    }
+    ```
+    ```kotlin
+    //kotlin
+    for (count in 0..10) {
+        Log.v(TAG, "Count: $count")
+        try {
+            Thread.sleep(2000) //sleep for 2 seconds
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
         }
     }
     ```
@@ -160,12 +173,20 @@ We can perform this communication using a [`Handler`](https://developer.android.
 - We instantiate a `new Handler()` object (e.g., in the Service's `onCreate()` callback), calling a method on that object when we want to "send" a message. The easiest way to send a message is to use the `post()` function, which takes a `Runnable()` method which will be executed _on the Main Thread_:
 
     ```java
+    //java
     mHandler.post(new Runnable() {
         @Override
         public void run() {
             Toast.makeText(CountingService.this, "Count: " + count, Toast.LENGTH_SHORT).show();
         }
     });
+    ```
+    ```kotlin
+    //kotlin
+    mHandler.post {
+        Toast.makeText(this@CountingService, "Count: $count", Toast.LENGTH_SHORT).show()
+        Log.v(TAG, "" + count)
+    }
     ```
 
 ### The Service Lifecycle {-}
@@ -194,6 +215,7 @@ Having demonstrated the basic usage of a service, consider what is going on "und
 ___Practice:___ fill in the callback functions with Log or Toast messages to see how and when they are executed. For example:
 
 ```java
+//java
 public int onStartCommand(Intent intent, int flags, int startId) {
   Toast.makeText(this, "Intent received", Toast.LENGTH_SHORT).show();
   return super.onStartCommand(intent, flags, startId);
@@ -241,6 +263,7 @@ We can also implement and register a `MediaPlayer.OnCompletionListener` to do so
 Finally, it is possible to use `MediaPlayer` to play files from a `ContentProvider` or even off the Internet!
 
 ```java
+//java
 String url = "http://........"; // your URL here
 MediaPlayer mediaPlayer = new MediaPlayer();
 mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
@@ -276,6 +299,7 @@ Foreground services require a **Notification** in the status bar, similar to the
 We create this Notification inside the Service's `onStartCommand()` method, then pass it to the `startForeground()` method in order to put our Service in the foreground:
 
 ```java
+//java, pre-Oreo
 String songName = "The Entertainer";
 
 PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0,
@@ -288,7 +312,31 @@ Notification notification = new NotificationCompat.Builder(this)
         .setContentIntent(pendingIntent)
         .setOngoing(true) //cannot be dismissed by the user
         .build();
+
 startForeground(NOTIFICATION_ID, notification); //make this a foreground service!
+```
+```kotlin
+//kotlin
+val songName = "The Entertainer"
+
+val pendingIntent = PendingIntent.getActivity(applicationContext, 0,
+        Intent(applicationContext, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT)
+
+if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+    val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID, "Demo channel", NotificationManager.IMPORTANCE_LOW)
+    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    notificationManager.createNotificationChannel(channel)
+}
+
+val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+        .setSmallIcon(android.R.drawable.ic_media_play)
+        .setContentTitle("Music Player")
+        .setContentText("Now playing: $songName")
+        .setContentIntent(pendingIntent)
+        .setOngoing(true) //cannot be dismissed by the user
+        .build()
+
+startForeground(NOTIFICATION_ID, notification) //make this a foreground service!
 ```
 
 Some details about this Notification:
@@ -312,11 +360,20 @@ As an example, let's add the ability to "pause" the music being played as a boun
 The first thing we need to do is have our Service implement the `onBind()` method. To do this, we will need an `IBinder` object to return (that is: an object of a class that implements the `IBinder` interface). For "local services" (e.g., Services that are run _in the same process_), the easiest way to get an `IBinder` is to extend the `Binder` class:
 
 ```java
+//kotlin
 public class MyBinder extends Binder { //implements IBinder
     //binder class methods will go here!
 }
 
 private final IBinder mBinder = new MyBinder(); //singleton instance variable
+```
+```kotlin
+//kotlin
+class LocalBinder : Binder() {
+    //binder class methods will go here!
+}
+
+private val mLocalBinder = LocalBinder() //singleton instance variable
 ```
 
 - Our local version starts "empty" for now; we'll add details below.
@@ -351,7 +408,9 @@ In the Activity, we need to do a bit more work in order to interact with the bou
 - The `ServiceConnection` parameter is a reference to an object that implements the `ServiceConnection` interface, providing callbacks that can be executed when the Activity connects to the Service. We can have the Activity implement the interface, or create a separate anonymous class:
 
     ```java
+    //java
     /** Defines callbacks for service binding, passed to bindService() */
+    /** From Android documentation  */
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
             // We've bound to LocalService, cast the IBinder and get LocalService instance
@@ -363,6 +422,23 @@ In the Activity, we need to do a bit more work in order to interact with the bou
             mBound = false;
         }
     };
+    ```
+    ```kotlin
+    //kotlin
+    /** Defines callbacks for service binding, passed to bindService() */
+    /** From Android documentation  */
+    private val mConnection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            val binder = service as LocalService.LocalBinder
+            mService = binder.getService()
+            mBound = true
+        }
+
+        override fun onServiceDisconnected(arg0: ComponentName) {
+            mBound = false
+        }
+    }    
     ```
 
     The `onServiceConnected()` callback handles the actual connection, and is where we get access to that `IBinder`. We can use that `IBinder` to fetch the Service object to call methods on, saving that as an instance variable to do stuff to it! We'll also track whether or not the Service has been bound to avoid any `null` errors.
